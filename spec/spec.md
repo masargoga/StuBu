@@ -55,10 +55,10 @@ The system must maintain an immutable audit trail for relevant changes.
 
 Use the following technology stack unless a documented architectural reason requires otherwise:
 
-* Java 21
+* Java 25
 * Spring Boot
 * Vaadin
-* Current stable Vaadin version compatible with Java 21 and the selected Spring Boot version
+* Current stable Vaadin version compatible with Java 25 and the selected Spring Boot version
 * Vaadin server-side application architecture
 * H2 for development/testing
 * PostgreSQL for production

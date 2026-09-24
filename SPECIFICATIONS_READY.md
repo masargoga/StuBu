@@ -143,7 +143,7 @@ SUBMITTED (employee read-only, manager reviews)
 ```
 
 ### Technology Stack
-- **Backend:** Java 21, Spring Boot, Spring Security
+- **Backend:** Java 25, Spring Boot, Spring Security
 - **Frontend:** Vaadin (server-side)
 - **Database:** PostgreSQL (production), H2 (development)
 - **Persistence:** JPA/Hibernate
@@ -185,7 +185,7 @@ SUBMITTED (employee read-only, manager reviews)
 ✓ Immutable audit trail — AuditLog entity, all use cases
 
 ### From Master Prompt Section 2 (Technology Requirements)
-✓ Java 21 — Confirmed in architecture.md  
+✓ Java 25 — Confirmed in architecture.md  
 ✓ Spring Boot — Confirmed in architecture.md  
 ✓ Vaadin — Confirmed in architecture.md  
 ✓ H2 for development — Mentioned in datamodel  

@@ -10,7 +10,7 @@ Tests are organized around the **use case**, not around individual views or laye
 ## Structure
 
 - **One test class per use case.** Name it after the use case: `UC001BrowseMovies`, `UC002BuyTickets`, etc. The `UC-NNN` prefix is the traceability link back to `spec/use-cases/use-case-NNN-*.md`.
-- **One folder per use case.** Place the class (and any supporting fixtures) in `src/test/java/com/example/specdriven/usecases/uc001_browse_movies/` (or `src/test/frontend/usecases/uc-001-browse-movies/` for tests that must run in the browser). Folder name mirrors the spec filename.
+- **One folder per use case.** Place the class (and any supporting fixtures) in `src/test/java/com/stubu/specdriven/usecases/uc001_browse_movies/` (or `src/test/frontend/usecases/uc-001-browse-movies/` for tests that must run in the browser). Folder name mirrors the spec filename.
 - **Method names map directly to the spec.** Use the segments from the use-case document so a reader can jump from a failing test back to the exact line of spec it covers:
   - `mainFlow_*` — one method per scenario through the Main Flow.
   - `af1_*`, `af2_*`, … — one method per Alternative Flow, named for its condition.

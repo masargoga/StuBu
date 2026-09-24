@@ -480,7 +480,7 @@ The application is designed to be built incrementally in 5 phases, with each pha
 ## Dependencies & Prerequisites
 
 ### Before Phase 1 Starts
-- [ ] Development environment setup (Java 21, Maven, IDE)
+- [ ] Development environment setup (Java 25, Maven, IDE)
 - [ ] PostgreSQL development instance
 - [ ] IAM test environment (Entra ID or Google OAuth sandbox)
 - [ ] Git repository established

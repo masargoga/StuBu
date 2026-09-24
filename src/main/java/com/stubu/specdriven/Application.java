@@ -1,4 +1,4 @@
-package com.example;
+package com.stubu.specdriven;
 
 import com.vaadin.flow.theme.aura.Aura;
 import org.springframework.boot.SpringApplication;

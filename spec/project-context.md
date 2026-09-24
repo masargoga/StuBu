@@ -43,7 +43,7 @@ Success means employees can track their time with minimal friction, managers can
 - **Scalability:** Must run as multiple Kubernetes pods without in-memory state or local filesystem dependencies
 - **Audit Trail:** Immutable audit log for all relevant data changes
 - **Data Ownership:** IAM system provides authenticated email only; application database provides all other employee information
-- **Technology Stack:** Java 21, Spring Boot, Vaadin, Spring Security, JPA/Hibernate
+- **Technology Stack:** Java 25, Spring Boot, Vaadin, Spring Security, JPA/Hibernate
 - **Access:** No integration with external systems; all functionality runs within the application itself
 
 ---

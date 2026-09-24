@@ -79,7 +79,7 @@ SUBMITTED (read-only for employee)
 
 | Component | Technology |
 |-----------|-----------|
-| Runtime | Java 21 |
+| Runtime | Java 25 |
 | Framework | Spring Boot |
 | UI | Vaadin (server-side) |
 | Database (Dev) | H2 |
