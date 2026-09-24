@@ -10,6 +10,10 @@
     <properties>
         <java.version>25</java.version>
         <vaadin.version>25.2.8</vaadin.version>
+        <playwright.version>1.63.0</playwright.version>
+        <!-- Browser tests (JUnit tag e2e) run only with -Pe2e -->
+        <test.groups></test.groups>
+        <test.excludedGroups>e2e</test.excludedGroups>
     </properties>
     
     <parent>
@@ -95,6 +99,12 @@
             <artifactId>browserless-test-spring</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.microsoft.playwright</groupId>
+            <artifactId>playwright</artifactId>
+            <version>${playwright.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     
     <build>
@@ -114,6 +124,8 @@
                         <include>**/*Tests.java</include>
                         <include>**/usecases/**/UC*.java</include>
                     </includes>
+                    <groups>${test.groups}</groups>
+                    <excludedGroups>${test.excludedGroups}</excludedGroups>
                 </configuration>
             </plugin>
             <plugin>
@@ -155,4 +167,15 @@
             </snapshots>
         </pluginRepository>
     </pluginRepositories>
+
+    <profiles>
+        <profile>
+            <!-- .\mvnw test -Pe2e : real-browser tests (Playwright driving Chrome) instead of the regular tests -->
+            <id>e2e</id>
+            <properties>
+                <test.groups>e2e</test.groups>
+                <test.excludedGroups></test.excludedGroups>
+            </properties>
+        </profile>
+    </profiles>
 </project>

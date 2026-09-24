@@ -178,11 +178,8 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
         dialog.setCancelText(getTranslation("time.cancel"));
         dialog.setConfirmText(getTranslation("time.replace.confirm"));
         dialog.addConfirmListener(event -> replaceCheckIn());
-        dialog.addOpenedChangeListener(event -> {
-            if (!event.isOpened()) {
-                dialog.removeFromParent();
-            }
-        });
+        // Detach only after the closing animation: the confirm event of a button click can arrive after "closed".
+        dialog.addClosedListener(event -> dialog.removeFromParent());
         dialog.open();
     }
 
@@ -224,11 +221,8 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
             confirmMissingCheckIn(dialog, error, start);
         });
         dialog.getFooter().add(cancel, confirm);
-        dialog.addOpenedChangeListener(event -> {
-            if (!event.isOpened()) {
-                dialog.removeFromParent();
-            }
-        });
+        // Detach only after the closing animation: the confirm event of a button click can arrive after "closed".
+        dialog.addClosedListener(event -> dialog.removeFromParent());
         dialog.open();
     }
 
