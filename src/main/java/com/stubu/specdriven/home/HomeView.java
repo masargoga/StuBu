@@ -15,6 +15,8 @@ import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.PermitAll;
+import java.time.Duration;
+import org.springframework.beans.factory.annotation.Value;
 
 /**
  * Home page shown after login: who is signed in, and the time recording panel. Every role includes the
@@ -28,7 +30,8 @@ public class HomeView extends VerticalLayout implements HasDynamicTitle, LocaleC
     private final EmployeePrincipal employee;
     private final VerticalLayout header = new VerticalLayout();
 
-    public HomeView(AuthenticationContext authenticationContext, TimeEntryService timeEntryService) {
+    public HomeView(AuthenticationContext authenticationContext, TimeEntryService timeEntryService,
+            @Value("${stubu.time-tracking.refresh-interval:PT30S}") Duration refreshInterval) {
         addClassName("home-view");
         setPadding(true);
         header.setPadding(false);
@@ -39,7 +42,7 @@ public class HomeView extends VerticalLayout implements HasDynamicTitle, LocaleC
                 .map(EmployeePrincipal.class::cast)
                 .orElse(null);
         if (employee != null && employee.getEmployeeId() != null) {
-            add(new TimeTrackingPanel(timeEntryService, employee.getEmployeeId()));
+            add(new TimeTrackingPanel(timeEntryService, employee.getEmployeeId(), refreshInterval));
         }
     }
 

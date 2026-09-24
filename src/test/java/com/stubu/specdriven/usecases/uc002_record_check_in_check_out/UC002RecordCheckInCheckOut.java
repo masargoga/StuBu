@@ -161,7 +161,7 @@ class UC002RecordCheckInCheckOut extends SpringBrowserlessTest {
         assertNull(stored.getOpenEmployeeId());
         // 10.-14. Duration, totals, message, status and timeline.
         assertTrue(text(panel).contains("Checked out at " + TIME.format(checkOut) + ". Worked 4h 4m."), text(panel));
-        assertTrue(text(panel).contains("Worked: 4h 4m"), text(panel));
+        assertTrue(text(panel).contains("Total hours today: 4h 4m"), text(panel));
         assertTrue(text(panel).contains("Break: 0h 0m"), text(panel));
         assertTrue(text(panel).contains("Not checked in"), text(panel));
         assertEquals(1, timelineRows().size());
@@ -191,7 +191,7 @@ class UC002RecordCheckInCheckOut extends SpringBrowserlessTest {
         TimeTrackingPanel panel = openPanel();
 
         assertEquals(2, timelineRows().size());
-        assertTrue(text(panel).contains("Worked: 8h 0m"), text(panel));
+        assertTrue(text(panel).contains("Total hours today: 8h 0m"), text(panel));
         assertTrue(text(panel).contains("Break: 1h 0m"), text(panel));
     }
 
@@ -282,7 +282,7 @@ class UC002RecordCheckInCheckOut extends SpringBrowserlessTest {
         assertNull(stored.getOpenEmployeeId());
         assertTrue(text(panel).contains("Checked out at " + TIME.format(clock.instant()) + ". Worked 9h 0m."),
                 text(panel));
-        assertTrue(text(panel).contains("Worked: 9h 0m"), text(panel));
+        assertTrue(text(panel).contains("Total hours today: 9h 0m"), text(panel));
         AuditLogEntry audit = onlyNewAuditEntry();
         assertEquals(AuditAction.CREATE, audit.getAction());
         assertEquals(alice, audit.getUserId());

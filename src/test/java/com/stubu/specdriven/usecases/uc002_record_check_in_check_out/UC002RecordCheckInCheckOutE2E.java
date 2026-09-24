@@ -55,7 +55,7 @@ class UC002RecordCheckInCheckOutE2E extends E2ETest {
         assertEquals("Checked out at 12:07 PM. Worked 4h 4m.", text(message));
         assertEquals("Not checked in", text(page.locator(".time-status")));
         assertThat(page.locator(".timeline-bar-open")).hasCount(0);
-        assertThat(page.locator(".time-totals")).containsText("Worked: 4h 4m");
+        assertThat(page.locator(".time-totals")).containsText("Total hours today: 4h 4m");
         assertThat(page.locator(".time-totals")).containsText("Break: 0h 0m");
         assertThat(checkIn).hasAttribute("theme", "primary");
         screenshot("checked-out");
@@ -85,7 +85,7 @@ class UC002RecordCheckInCheckOutE2E extends E2ETest {
         assertBar(bars.get(1), track, 13 * 60 + 7 + 14 / 60.0, 90);
         assertFalse(bars.get(0).getAttribute("class").contains("timeline-bar-open"), "Completed period: solid");
         assertTrue(bars.get(1).getAttribute("class").contains("timeline-bar-open"), "Open period: dashed");
-        assertThat(page.locator(".time-totals")).containsText("Worked: 5h 34m"); // 4h04 + 1h30
+        assertThat(page.locator(".time-totals")).containsText("Total hours today: 5h 34m"); // 4h04 + 1h30
         assertThat(page.locator(".time-totals")).containsText("Break: 1h 0m");
         screenshot("timeline-two-periods");
     }

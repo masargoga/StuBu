@@ -77,3 +77,4 @@ com.stubu.specdriven/
 - **Storage:** work periods and audit records are absolute UTC instants (`TIMESTAMP WITH TIME ZONE` / `Instant`), so periods can cross midnight.
 - **Presentation:** "today" and all displayed times use the browser's time zone (fetched with `retrieveExtendedClientDetails`), falling back to the server zone. Times and dates are formatted for the user's locale.
 - **Invariants in the database:** at most one open work period per employee (unique `open_employee_id`), and a check-out never precedes its check-in (check constraint). Concurrent updates are detected with a `version` column.
+- **Live refresh:** an open time tracking panel reloads itself every `stubu.time-tracking.refresh-interval` (default 30 seconds, `UI.triggerAfter`, no server push needed) and redraws only when an entry or the displayed minute changed.

@@ -354,3 +354,77 @@ vaadin-button.time-action vaadin-icon {
   width: 100%;
   font-size: var(--aura-font-size-l);
 }
+
+/* UC-003: daily timesheet details */
+.time-clock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vaadin-gap-xs) var(--vaadin-gap-xl);
+  font-size: var(--aura-font-size-xl);
+}
+
+.time-clock .time-date {
+  font-size: inherit;
+}
+
+.time-current,
+.time-elapsed {
+  font-weight: var(--aura-font-weight-medium);
+}
+
+.time-empty {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--vaadin-padding-m);
+  border: 1px dashed var(--vaadin-border-color);
+  border-radius: var(--vaadin-radius-m);
+  font-size: var(--aura-font-size-xl);
+  line-height: var(--aura-line-height-xl);
+}
+
+.timeline-row-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--vaadin-gap-xs) var(--vaadin-gap-m);
+}
+
+.timeline-row-header .timeline-label {
+  flex: 1 1 auto;
+}
+
+.timeline-edit {
+  display: inline-flex;
+}
+
+.time-load-error {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.time-load-error vaadin-button {
+  margin-inline-start: auto;
+}
+
+.time-total-detail {
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-l);
+}
+
+/* Breathing room found during visual verification of UC-003 */
+.time-clock {
+  margin-bottom: var(--vaadin-gap-s);
+}
+
+.timeline {
+  margin-top: var(--vaadin-gap-s);
+}
+
+.time-totals {
+  margin-top: var(--vaadin-gap-s);
+}
+
+/* The error text stays next to its icon; the Retry button wraps below it when there is no room. */
+.time-load-error > span {
+  flex: 1 1 12rem;
+}

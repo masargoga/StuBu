@@ -1,17 +1,24 @@
 package com.stubu.specdriven.timetracking;
 
+import com.vaadin.flow.component.badge.Badge;
+import com.vaadin.flow.component.badge.BadgeVariant;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.shared.Tooltip;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.List;
 import java.util.Locale;
 
 /**
  * Timeline of one day's work periods. Every period is a row with a text description (readable by screen
- * readers) and a bar on a 24 hour scale; the bar starts and ends with a dot so check-in and check-out are
- * visibly connected, and an open period is drawn differently from a completed one.
+ * readers), its status and an edit control, and a bar on a 24 hour scale; the bar starts and ends with a dot
+ * so check-in and check-out are visibly connected, and an open period is drawn differently from a completed
+ * one.
+ *
+ * <p>The edit control is disabled until time entries can be corrected (UC-004).
  */
 public class WorkTimeline extends Div {
 
@@ -61,6 +68,16 @@ public class WorkTimeline extends Div {
         Span label = new Span(description);
         label.addClassName("timeline-label");
 
+        Badge status = new Badge(getTranslation(entry.isActive() ? "time.status.inProgress"
+                : "time.status.completed"));
+        status.setTestId("entry-status");
+        if (!entry.isActive()) {
+            status.addThemeVariants(BadgeVariant.SUCCESS);
+        }
+
+        Div header = new Div(label, status, editControl(start));
+        header.addClassName("timeline-row-header");
+
         Instant end = entry.isActive() ? now : entry.getCheckOutAt();
         double dayLength = Duration.between(dayStart, dayEnd).toMillis();
         double from = clamp(Duration.between(dayStart, entry.getCheckInAt()).toMillis() / dayLength);
@@ -74,11 +91,24 @@ public class WorkTimeline extends Div {
         track.addClassName("timeline-track");
         track.getElement().setAttribute("aria-hidden", "true");
 
-        Div row = new Div(label, track);
+        Div row = new Div(header, track);
         row.addClassName("timeline-row");
         row.setClassName("timeline-row-open", entry.isActive());
         row.getElement().setAttribute("role", "listitem");
         return row;
+    }
+
+    /** A disabled edit button; a wrapper carries the explanation because disabled buttons show no tooltip. */
+    private Span editControl(String start) {
+        Button edit = new Button(getTranslation("time.edit"));
+        edit.addThemeVariants(ButtonVariant.TERTIARY, ButtonVariant.SMALL);
+        edit.setEnabled(false);
+        edit.setTestId("edit-entry");
+        edit.getElement().setAttribute("aria-label", getTranslation("time.edit.label", start));
+        Span wrapper = new Span(edit);
+        wrapper.addClassName("timeline-edit");
+        Tooltip.forComponent(wrapper).withText(getTranslation("time.edit.unavailable"));
+        return wrapper;
     }
 
     private static double clamp(double fraction) {

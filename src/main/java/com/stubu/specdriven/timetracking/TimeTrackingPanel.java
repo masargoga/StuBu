@@ -1,6 +1,8 @@
 package com.stubu.specdriven.timetracking;
 
 import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -15,12 +17,14 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.timepicker.TimePicker;
 import com.vaadin.flow.i18n.LocaleChangeEvent;
 import com.vaadin.flow.i18n.LocaleChangeObserver;
+import com.vaadin.flow.shared.Registration;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Locale;
 import org.slf4j.Logger;
@@ -46,22 +50,39 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
 
     private final transient TimeEntryService service;
     private final long employeeId;
+    private final Duration refreshInterval;
     private ZoneId zone;
     private transient DaySummary summary;
+    private boolean loadFailed;
     private Message message;
+    private String renderedSignature = "";
+    private Registration refreshTimer;
 
     private final Div status = new Div();
     private final Button checkIn = new Button();
     private final Button checkOut = new Button();
     private final Div messageBox = new Div();
+    private final Div loadErrorBox = new Div();
+    private final Span loadError = new Span();
+    private final Button retry = new Button();
+    private final VerticalLayout day = new VerticalLayout();
     private final Span date = new Span();
+    private final Span currentTime = new Span();
+    private final Span elapsed = new Span();
+    private final Div emptyHint = new Div();
     private final WorkTimeline timeline = new WorkTimeline();
     private final Span worked = new Span();
     private final Span breaks = new Span();
+    private final Div workedDetail = new Div();
 
-    public TimeTrackingPanel(TimeEntryService service, long employeeId) {
+    /**
+     * @param refreshInterval how often the panel reloads itself while it is open, so the current time, the
+     *                        elapsed time and the totals stay correct
+     */
+    public TimeTrackingPanel(TimeEntryService service, long employeeId, Duration refreshInterval) {
         this.service = service;
         this.employeeId = employeeId;
+        this.refreshInterval = refreshInterval;
         this.zone = service.defaultZone();
 
         addClassName("time-tracking");
@@ -78,15 +99,39 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
 
         messageBox.addClassName("time-message");
         messageBox.setVisible(false);
+
+        var errorIcon = VaadinIcon.WARNING.create();
+        errorIcon.getElement().setAttribute("aria-hidden", "true");
+        retry.setTestId("retry");
+        retry.addThemeVariants(ButtonVariant.PRIMARY);
+        retry.addClickListener(event -> refresh());
+        loadErrorBox.add(errorIcon, loadError, retry);
+        loadErrorBox.addClassNames("time-message", "time-message-error", "time-load-error");
+        loadErrorBox.getElement().setAttribute("role", "alert");
+        loadErrorBox.setVisible(false);
+
         status.addClassName("time-status");
         status.getElement().setAttribute("role", "status");
         date.addClassName("time-date");
+        currentTime.addClassName("time-current");
+        currentTime.setTestId("current-time");
+        elapsed.addClassName("time-elapsed");
+        elapsed.setTestId("elapsed-time");
+        Div clock = new Div(date, currentTime, elapsed);
+        clock.addClassName("time-clock");
+        emptyHint.addClassName("time-empty");
         worked.addClassName("time-total");
+        worked.setTestId("total-worked");
         breaks.addClassName("time-total");
         Div totals = new Div(worked, breaks);
         totals.addClassName("time-totals");
+        workedDetail.addClassName("time-total-detail");
 
-        add(actions, messageBox, status, date, timeline, totals);
+        day.setPadding(false);
+        day.setSpacing(true);
+        day.add(status, clock, emptyHint, timeline, totals, workedDetail);
+
+        add(actions, messageBox, loadErrorBox, day);
         load();
     }
 
@@ -99,6 +144,7 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
     /** The browser's time zone is used to decide what "today" is and to present times. */
     @Override
     protected void onAttach(AttachEvent attachEvent) {
+        startRefreshTimer(attachEvent.getUI());
         attachEvent.getUI().getPage().retrieveExtendedClientDetails(details -> {
             try {
                 zone = ZoneId.of(details.getTimeZoneId());
@@ -108,6 +154,26 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
                 log.debug("Keeping the server time zone, the browser reported {}", details.getTimeZoneId());
             }
         });
+    }
+
+    @Override
+    protected void onDetach(DetachEvent detachEvent) {
+        stopRefreshTimer();
+    }
+
+    private void startRefreshTimer(UI ui) {
+        stopRefreshTimer();
+        refreshTimer = ui.triggerAfter(refreshInterval, () -> {
+            tick();
+            startRefreshTimer(ui);
+        });
+    }
+
+    private void stopRefreshTimer() {
+        if (refreshTimer != null) {
+            refreshTimer.remove();
+            refreshTimer = null;
+        }
     }
 
     @Override
@@ -258,7 +324,7 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
     }
 
     /** Reloads the day from the server and redraws the panel. */
-    private void refresh() {
+    public void refresh() {
         load();
         render();
     }
@@ -266,18 +332,38 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
     private void load() {
         try {
             summary = service.today(employeeId, zone);
+            loadFailed = false;
         } catch (DataAccessException e) {
             log.error("Could not load the time entries of employee {}", employeeId, e);
-            message = new Message("time.loadFailed", true);
+            loadFailed = true;
         }
+    }
+
+    /** Called by the timer: redraws only when something visible changed (an entry, or the minute). */
+    private void tick() {
+        load();
+        if (!signature().equals(renderedSignature)) {
+            render();
+        }
+    }
+
+    private String signature() {
+        StringBuilder signature = new StringBuilder().append(loadFailed).append(zone)
+                .append(service.now().truncatedTo(ChronoUnit.MINUTES));
+        if (summary != null) {
+            summary.entries().forEach(entry -> signature.append('|').append(entry.getId()).append(',')
+                    .append(entry.getCheckInAt()).append(',').append(entry.getCheckOutAt()));
+        }
+        return signature.toString();
     }
 
     private void render() {
         Locale locale = getLocale();
+        renderedSignature = signature();
         checkIn.setText(getTranslation("time.checkIn"));
         checkOut.setText(getTranslation("time.checkOut"));
 
-        boolean working = summary != null && summary.open().isPresent();
+        boolean working = !loadFailed && summary != null && summary.open().isPresent();
         checkIn.setThemeVariant(ButtonVariant.PRIMARY, !working);
         checkOut.setThemeVariant(ButtonVariant.PRIMARY, working);
 
@@ -293,18 +379,36 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
             messageBox.setVisible(true);
         }
 
-        if (summary == null) {
+        loadError.setText(getTranslation("time.loadFailed"));
+        retry.setText(getTranslation("time.retry"));
+        loadErrorBox.setVisible(loadFailed);
+        boolean showDay = !loadFailed && summary != null;
+        day.setVisible(showDay);
+        if (!showDay) {
             return;
         }
+
+        Instant now = service.now();
         status.setText(working
                 ? getTranslation("time.status.working",
                         TimeFormats.time(summary.open().orElseThrow().getCheckInAt(), zone, locale))
                 : getTranslation("time.status.notWorking"));
         status.setClassName("time-status-working", working);
         date.setText(TimeFormats.fullDate(summary.date(), locale));
-        timeline.show(summary, zone, service.now());
+        currentTime.setText(getTranslation("time.currentTime", TimeFormats.time(now, zone, locale)));
+        elapsed.setVisible(working);
+        elapsed.setText(getTranslation("time.elapsed", DurationFormat.format(summary.openElapsed())));
+
+        boolean empty = summary.entries().isEmpty();
+        emptyHint.setText(getTranslation("time.empty"));
+        emptyHint.setVisible(empty);
+        timeline.show(summary, zone, now);
+
         worked.setText(getTranslation("time.worked", DurationFormat.format(summary.worked())));
         breaks.setText(getTranslation("time.break", DurationFormat.format(summary.breaks())));
+        workedDetail.setVisible(working);
+        workedDetail.setText(getTranslation("time.worked.detail", DurationFormat.format(summary.completed()),
+                DurationFormat.format(summary.openElapsed())));
     }
 
     /** Turns instants and durations in message arguments into text in the user's zone and locale. */
