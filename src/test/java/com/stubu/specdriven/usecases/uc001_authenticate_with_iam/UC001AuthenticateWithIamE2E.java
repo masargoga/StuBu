@@ -109,14 +109,12 @@ class UC001AuthenticateWithIamE2E extends E2ETest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("viewports")
-    void theHomePageHeaderAndContentLineUpAtEveryScreenSize(Viewport viewport) {
+    void theHomePageLaysOutNavigationHeaderAndContentAtEveryScreenSize(Viewport viewport) {
         open(viewport);
 
         signInAsAlice();
 
-        double title = box(".app-title")[0];
-        double welcome = box(".home-welcome")[0];
-        assertEquals(title, welcome, 3.0, "Header title and page content start at the same x");
+        assertNavigationLayout(viewport, ".home-welcome");
         assertNoHorizontalOverflow();
         assertReadable(".home-description");
     }

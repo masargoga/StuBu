@@ -36,6 +36,24 @@ public class Timesheet {
     @Column(nullable = false, length = 20)
     private TimesheetStatus status;
 
+    @Column(name = "submitted_at")
+    private Instant submittedAt;
+
+    @Column(name = "approved_at")
+    private Instant approvedAt;
+
+    @Column(name = "approved_by")
+    private Long approvedBy;
+
+    @Column(name = "rejected_at")
+    private Instant rejectedAt;
+
+    @Column(name = "rejected_by")
+    private Long rejectedBy;
+
+    @Column(name = "rejection_reason", length = 1000)
+    private String rejectionReason;
+
     @Version
     private Long version;
 
@@ -80,6 +98,31 @@ public class Timesheet {
 
     public TimesheetStatus getStatus() {
         return status;
+    }
+
+    public Instant getSubmittedAt() {
+        return submittedAt;
+    }
+
+    public Instant getApprovedAt() {
+        return approvedAt;
+    }
+
+    /** The manager who approved the timesheet, if it was approved. */
+    public Long getApprovedBy() {
+        return approvedBy;
+    }
+
+    public Instant getRejectedAt() {
+        return rejectedAt;
+    }
+
+    public Long getRejectedBy() {
+        return rejectedBy;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
     }
 
     public void setStatus(TimesheetStatus status) {

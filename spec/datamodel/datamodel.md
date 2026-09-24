@@ -53,16 +53,18 @@ Monthly timesheet container with approval workflow.
 | year | Integer | Not null | e.g., 2024 |
 | month | Integer | Not null | 1-12 |
 | status | Enum | DRAFT, SUBMITTED, APPROVED, REJECTED | Approval workflow state |
-| submittedAt | LocalDateTime | Nullable | When submitted for approval |
-| approvedAt | LocalDateTime | Nullable | When approved |
+| submittedAt | Instant (UTC) | Nullable | When submitted for approval (set by UC-006) |
+| approvedAt | Instant (UTC) | Nullable | When approved (set by UC-007) |
+| approvedBy | Long (FK) | Nullable | Employee who approved |
+| rejectedAt | Instant (UTC) | Nullable | When rejected (set by UC-007) |
+| rejectedBy | Long (FK) | Nullable | Employee who rejected |
 | rejectionReason | String | Nullable | Reason if rejected |
-| rejectedAt | LocalDateTime | Nullable | When rejected |
 | createdAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
 | updatedAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
-| Unique constraint | (employeeId, year, month) | | One timesheet per employee per month. Columns are named `period_year` / `period_month` (YEAR and MONTH are reserved words in H2). Until UC-005 creates records, a month without a Timesheet counts as DRAFT; only `status` and the audit timestamps exist so far, the other fields arrive with UC-006 and UC-007 |
+| Unique constraint | (employeeId, year, month) | | One timesheet per employee per month. Columns are named `period_year` / `period_month` (YEAR and MONTH are reserved words in H2). UC-005 creates the record (DRAFT) the first time a month is viewed; a month without a record still counts as DRAFT. The submission and approval fields exist since UC-005 but are only written by UC-006 and UC-007 |
 
 ### PublicHoliday
-Calendar configuration for holidays.
+Calendar configuration for holidays. UC-005 only reads it (management is UC-012).
 
 | Field | Type | Constraints | Notes |
 |-------|------|-------------|-------|

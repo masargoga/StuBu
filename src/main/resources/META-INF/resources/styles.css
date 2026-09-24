@@ -466,3 +466,181 @@ vaadin-button.time-action vaadin-icon {
   min-height: 3rem;
   font-size: var(--aura-font-size-xl);
 }
+
+/* UC-005: monthly timesheet */
+.timesheet-view {
+  box-sizing: border-box;
+  padding: var(--vaadin-padding-l);
+  gap: var(--vaadin-gap-l);
+}
+
+.timesheet-view h2 {
+  margin: 0;
+  font-size: calc(var(--aura-font-size-xl) * 1.6);
+  line-height: 1.2;
+}
+
+.month-navigation {
+  flex-wrap: wrap;
+  gap: var(--vaadin-gap-s);
+}
+
+.month-navigation vaadin-select {
+  min-width: 14rem;
+  --vaadin-input-field-value-font-size: var(--aura-font-size-xl);
+}
+
+.month-navigation vaadin-button {
+  font-size: var(--aura-font-size-xl);
+}
+
+.timesheet-status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vaadin-gap-s);
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--vaadin-padding-m);
+  border: 1px solid var(--vaadin-border-color-secondary);
+  border-radius: var(--vaadin-radius-m);
+  font-size: var(--aura-font-size-xl);
+}
+
+.status-line,
+.status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--vaadin-gap-xs) var(--vaadin-gap-m);
+}
+
+.status-note {
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-l);
+}
+
+.view-mode {
+  --vaadin-input-field-label-font-size: var(--aura-font-size-l);
+  font-size: var(--aura-font-size-l);
+}
+
+.month-timeline {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.month-axis {
+  position: relative;
+  height: var(--aura-line-height-s);
+  margin-inline: var(--vaadin-padding-s);
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-s);
+}
+
+.day-row {
+  box-sizing: border-box;
+  padding-block: var(--vaadin-padding-xs);
+  border-bottom: 1px solid var(--vaadin-border-color-secondary);
+  border-inline-start: 4px solid transparent;
+}
+
+.day-row .timeline-track {
+  margin-inline: var(--vaadin-padding-s);
+}
+
+/* Weekends: hatched background. Public holidays: tinted with an accent bar. Both also carry a text tag. */
+.day-weekend {
+  background: repeating-linear-gradient(135deg, transparent 0, transparent 6px,
+      color-mix(in srgb, var(--aura-neutral) 8%, transparent) 6px, color-mix(in srgb, var(--aura-neutral) 8%, transparent) 12px);
+}
+
+.day-holiday {
+  border-inline-start-color: var(--aura-orange);
+  background: color-mix(in srgb, var(--aura-orange) 12%, transparent);
+}
+
+.day-current {
+  border-inline-start-color: var(--aura-accent-color);
+}
+
+.day-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--vaadin-gap-xs) var(--vaadin-gap-m);
+  padding-inline: var(--vaadin-padding-s);
+  font-size: var(--aura-font-size-l);
+}
+
+.day-label {
+  min-width: 5rem;
+  font-weight: var(--aura-font-weight-semibold);
+}
+
+.day-tag {
+  padding: 0 var(--vaadin-padding-s);
+  border: 1px solid var(--vaadin-border-color);
+  border-radius: var(--vaadin-radius-s);
+  font-size: var(--aura-font-size-s);
+}
+
+.day-summary {
+  margin-inline-start: auto;
+  font-weight: var(--aura-font-weight-medium);
+}
+
+.day-none {
+  margin-inline-start: auto;
+  color: var(--vaadin-text-color-secondary);
+}
+
+.period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--vaadin-gap-xs);
+  padding-inline: var(--vaadin-padding-s);
+  font-size: var(--aura-font-size-l);
+}
+
+.period-label {
+  margin-inline-end: var(--vaadin-gap-s);
+}
+
+.timesheet-view vaadin-grid {
+  font-size: var(--aura-font-size-l);
+}
+
+/* Line breaks in a cell (the weekend/holiday note under the date) and wrapping work periods. */
+.timesheet-view vaadin-grid-cell-content {
+  white-space: pre-line;
+}
+
+vaadin-grid::part(weekend-cell) {
+  background: color-mix(in srgb, var(--aura-neutral) 8%, transparent);
+}
+
+vaadin-grid::part(holiday-cell) {
+  background: color-mix(in srgb, var(--aura-orange) 14%, transparent);
+}
+
+@media (max-width: 640px) {
+  .timesheet-view {
+    padding: var(--vaadin-padding-m);
+  }
+
+  .day-summary,
+  .day-none {
+    margin-inline-start: 0;
+    flex-basis: 100%;
+  }
+}
+
+/* Navigation drawer: larger entries for older users. */
+.app-navigation {
+  font-size: var(--aura-font-size-l);
+}
+
+.app-navigation vaadin-side-nav-item {
+  min-height: 2.75rem;
+}

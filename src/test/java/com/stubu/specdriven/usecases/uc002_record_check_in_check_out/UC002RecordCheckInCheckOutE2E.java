@@ -172,7 +172,7 @@ class UC002RecordCheckInCheckOutE2E extends E2ETest {
         }
         double[] track = box(".timeline-track");
         assertTrue(track[0] >= 0 && track[0] + track[2] <= viewport.width(), "Timeline fits the screen");
-        assertEquals(box(".app-title")[0], box(".home-welcome")[0], 3.0, "Header and content line up");
+        assertNavigationLayout(viewport, ".home-welcome");
         assertReadable(".time-message");
         assertReadable(".time-status");
         assertReadable(".time-date");

@@ -194,6 +194,25 @@ public abstract class E2ETest {
         return values.stream().mapToDouble(v -> ((Number) v).doubleValue()).toArray();
     }
 
+    /**
+     * The navigation drawer is permanently open beside the content on wide screens (and the content must start to
+     * its right); on narrower screens it is closed and opened with the toggle in the header.
+     */
+    protected void assertNavigationLayout(Viewport viewport, String contentSelector) {
+        assertTrue(page.getByTestId("drawer-toggle").isVisible(), "The navigation toggle is in the header");
+        Locator today = page.getByTestId("nav-today");
+        if (viewport.width() >= 1024) {
+            assertTrue(today.isVisible(), "The drawer is open on wide screens");
+            var navigation = today.boundingBox();
+            double content = box(contentSelector)[0];
+            assertTrue(content >= navigation.x + navigation.width, "Content (" + content + ") must start to the right of "
+                    + "the navigation (" + (navigation.x + navigation.width) + ")");
+        } else {
+            assertTrue(!today.isVisible(), "The drawer is closed on narrow screens");
+            assertTrue(box(contentSelector)[0] >= 0, "Content starts inside the screen");
+        }
+    }
+
     /** No horizontal scrolling: the page is never wider than the window. */
     protected void assertNoHorizontalOverflow() {
         Object widths = page.evaluate("[document.documentElement.scrollWidth, window.innerWidth]");

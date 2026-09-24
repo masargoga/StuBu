@@ -1,24 +1,39 @@
 package com.stubu.specdriven.base;
 
+import com.stubu.specdriven.home.HomeView;
+import com.stubu.specdriven.monthlytimesheet.MonthlyTimesheetView;
 import com.stubu.specdriven.security.EmployeePrincipal;
 import com.vaadin.flow.component.applayout.AppLayout;
+import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.Scroller;
+import com.vaadin.flow.component.sidenav.SideNav;
+import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.i18n.LocaleChangeEvent;
 import com.vaadin.flow.i18n.LocaleChangeObserver;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.PermitAll;
 
-/** Application shell for authenticated users: title, who is signed in, and sign out. */
+/**
+ * Application shell for authenticated users: title, who is signed in, sign out, and the navigation drawer
+ * (Today, My Timesheet; managers and administrators get more entries with their use cases).
+ */
 @PermitAll
 public class MainLayout extends AppLayout implements LocaleChangeObserver {
 
     private final H1 title = new H1();
     private final Button signOut;
+    private final SideNav navigation = new SideNav();
+    private final SideNavItem today = new SideNavItem("", HomeView.class, VaadinIcon.CLOCK.create());
+    private final SideNavItem timesheet = new SideNavItem("", MonthlyTimesheetView.class,
+            VaadinIcon.CALENDAR.create());
+    private final DrawerToggle drawerToggle = new DrawerToggle();
 
     public MainLayout(AuthenticationContext authenticationContext) {
         title.addClassName("app-title");
@@ -45,12 +60,23 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
         navbar.setAlignItems(FlexComponent.Alignment.CENTER);
         navbar.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
         navbar.expand(title);
-        addToNavbar(navbar);
+        drawerToggle.setTestId("drawer-toggle");
+        addToNavbar(drawerToggle, navbar);
+
+        today.setTestId("nav-today");
+        timesheet.setTestId("nav-timesheet");
+        navigation.addItem(today, timesheet);
+        navigation.addClassName("app-navigation");
+        addToDrawer(new Scroller(navigation));
     }
 
     @Override
     public void localeChange(LocaleChangeEvent event) {
         title.setText(getTranslation("app.title"));
         signOut.setText(getTranslation("app.signOut"));
+        today.setLabel(getTranslation("nav.today"));
+        timesheet.setLabel(getTranslation("nav.timesheet"));
+        navigation.getElement().setAttribute("aria-label", getTranslation("nav.label"));
+        drawerToggle.setAriaLabel(getTranslation("nav.toggle"));
     }
 }

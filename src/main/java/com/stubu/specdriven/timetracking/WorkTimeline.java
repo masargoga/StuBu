@@ -54,7 +54,7 @@ public class WorkTimeline extends Div {
         for (int hour : AXIS_HOURS) {
             Span tick = new Span(String.format("%02d", hour));
             tick.addClassName("timeline-tick");
-            tick.getStyle().set("left", percent(hour / 24.0));
+            tick.getStyle().set("left", DayTrack.percent(hour / 24.0));
             axis.add(tick);
         }
 
@@ -92,15 +92,7 @@ public class WorkTimeline extends Div {
         Div header = new Div(label, status, actions(entry.getId(), start, editable));
         header.addClassName("timeline-row-header");
 
-        Instant end = entry.isActive() ? now : entry.getCheckOutAt();
-        double dayLength = Duration.between(dayStart, dayEnd).toMillis();
-        double from = clamp(Duration.between(dayStart, entry.getCheckInAt()).toMillis() / dayLength);
-        double to = clamp(Duration.between(dayStart, end).toMillis() / dayLength);
-
-        Div bar = new Div();
-        bar.addClassName("timeline-bar");
-        bar.setClassName("timeline-bar-open", entry.isActive());
-        bar.getStyle().set("left", percent(from)).set("width", percent(Math.max(to - from, 0)));
+        Div bar = DayTrack.bar(entry, dayStart, dayEnd, now);
         Div track = new Div(bar);
         track.addClassName("timeline-track");
         track.getElement().setAttribute("aria-hidden", "true");
@@ -144,11 +136,4 @@ public class WorkTimeline extends Div {
         return note;
     }
 
-    private static double clamp(double fraction) {
-        return Math.min(1, Math.max(0, fraction));
-    }
-
-    private static String percent(double fraction) {
-        return String.format(Locale.ROOT, "%.3f%%", fraction * 100);
-    }
 }

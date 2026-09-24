@@ -4,8 +4,12 @@
 
 **Goal:** As an employee, I want to view my timesheet for the current or previous month so that I can verify all working hours before submission.
 
-**Status:** Pending
+**Status:** Implemented
 **Date:** 2024-01-15
+
+> A use case cannot be marked as **Implemented** unless all criteria in the use case implementation workflow are fulfilled.
+
+> **Revision:** The page is `/timesheet` ("My Timesheet"), reachable from a navigation drawer next to "Today"; `?month=YYYY-MM` selects the month. The month is chosen with previous/next buttons and a selector of the last 24 months, and only the current and earlier months are offered (BR-06; a future month in the URL falls back to the current one). The default display is a timeline: one row per calendar day with the work periods on a 00-24 hour scale, the daily total and break, and weekends and public holidays marked with text as well as colour. Entries can be corrected or deleted from the month view while the timesheet is a DRAFT (the UC-004 dialogs). The table view of AF-4 is an alternative display selected with a Timeline/Table switch. Public holidays come from a minimal read-only `public_holiday` table (UC-012 will manage it). The timesheet gets its approval fields (approved by/at, rejected by/at, reason) so the status area can say who approved or why it was rejected. **Submit** and **Edit & resubmit** are shown but disabled with an explanatory note until UC-006 and UC-008 exist.
 
 ---
 
@@ -122,12 +126,12 @@ Employee navigates to the "Timesheet" or "Monthly" view and selects a month to v
 
 ## Tests
 
-- [ ] Main Flow covered (steps 1–9)
-- [ ] AF-1 (No Entries) covered
-- [ ] AF-2 (Navigate Month) covered
-- [ ] AF-3 (Database Error) covered
-- [ ] AF-4 (Table View) covered
-- [ ] BR-01–BR-06 covered
+- [x] Main Flow covered (steps 1–9)
+- [x] AF-1 (No Entries) covered
+- [x] AF-2 (Navigate Month) covered
+- [x] AF-3 (Database Error) covered
+- [x] AF-4 (Table View) covered
+- [x] BR-01–BR-06 covered
 
 ---
 
