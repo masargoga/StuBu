@@ -1,6 +1,6 @@
 package com.stubu.specdriven.audit;
 
-import java.time.Instant;
+import java.time.Clock;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,16 +11,18 @@ public class AuditService {
     private static final int MAX_REASON_LENGTH = 1000;
 
     private final AuditLogRepository repository;
+    private final Clock clock;
 
-    public AuditService(AuditLogRepository repository) {
+    public AuditService(AuditLogRepository repository, Clock clock) {
         this.repository = repository;
+        this.clock = clock;
     }
 
     /** Records a general audit event. The timestamp always comes from the server. */
     @Transactional
     public AuditLogEntry record(Long userId, String entityType, Long entityId, AuditAction action,
             String oldValues, String newValues, String reason) {
-        return repository.save(new AuditLogEntry(Instant.now(), userId, entityType, entityId, action, oldValues,
+        return repository.save(new AuditLogEntry(clock.instant(), userId, entityType, entityId, action, oldValues,
                 newValues, truncate(reason)));
     }
 

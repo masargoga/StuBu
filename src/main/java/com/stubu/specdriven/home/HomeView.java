@@ -3,6 +3,8 @@ package com.stubu.specdriven.home;
 import com.stubu.specdriven.base.MainLayout;
 import com.stubu.specdriven.employee.Role;
 import com.stubu.specdriven.security.EmployeePrincipal;
+import com.stubu.specdriven.timetracking.TimeEntryService;
+import com.stubu.specdriven.timetracking.TimeTrackingPanel;
 import com.vaadin.flow.component.badge.Badge;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
@@ -15,8 +17,8 @@ import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.PermitAll;
 
 /**
- * Home dashboard shown after login. Its content varies by role; later use cases add the time
- * recording and approval features here.
+ * Home page shown after login: who is signed in, and the time recording panel. Every role includes the
+ * EMPLOYEE role, so everybody records their own time here.
  */
 @Route(value = "", layout = MainLayout.class)
 @PermitAll
@@ -24,25 +26,32 @@ public class HomeView extends VerticalLayout implements HasDynamicTitle, LocaleC
 
     /** The signed-in employee, or {@code null} when the session was not established by an OIDC login. */
     private final EmployeePrincipal employee;
+    private final VerticalLayout header = new VerticalLayout();
 
-    public HomeView(AuthenticationContext authenticationContext) {
+    public HomeView(AuthenticationContext authenticationContext, TimeEntryService timeEntryService) {
         addClassName("home-view");
         setPadding(true);
+        header.setPadding(false);
+        add(header);
+
         employee = authenticationContext.getAuthenticatedUser(Object.class)
                 .filter(EmployeePrincipal.class::isInstance)
                 .map(EmployeePrincipal.class::cast)
                 .orElse(null);
+        if (employee != null && employee.getEmployeeId() != null) {
+            add(new TimeTrackingPanel(timeEntryService, employee.getEmployeeId()));
+        }
     }
 
     @Override
     public void localeChange(LocaleChangeEvent event) {
-        removeAll();
+        header.removeAll();
         if (employee != null) {
-            add(dashboardFor(employee));
+            header.add(headerFor(employee));
         }
     }
 
-    private VerticalLayout dashboardFor(EmployeePrincipal current) {
+    private VerticalLayout headerFor(EmployeePrincipal current) {
         H2 welcome = new H2(getTranslation("home.welcome", current.getFullName()));
         welcome.addClassName("home-welcome");
 
@@ -52,9 +61,9 @@ public class HomeView extends VerticalLayout implements HasDynamicTitle, LocaleC
         Paragraph description = new Paragraph(getTranslation("home.role." + role.name()));
         description.addClassName("home-description");
 
-        VerticalLayout dashboard = new VerticalLayout(welcome, roleBadge, description);
-        dashboard.setPadding(false);
-        return dashboard;
+        VerticalLayout box = new VerticalLayout(welcome, roleBadge, description);
+        box.setPadding(false);
+        return box;
     }
 
     @Override

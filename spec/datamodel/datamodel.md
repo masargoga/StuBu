@@ -30,16 +30,16 @@ Organizational unit for grouping employees.
 | createdAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
 
 ### TimeEntry
-Individual work period (check-in to check-out).
+Individual work period (check-in to check-out). Timestamps are absolute UTC instants, so periods may cross midnight; dates and times are presented in the user's browser time zone.
 
 | Field | Type | Constraints | Notes |
 |-------|------|-------------|-------|
 | id | Long (PK) | Auto-generated | |
 | employeeId | Long (FK) | Not null | References Employee |
-| date | LocalDate | Not null | Date of the work period |
-| checkInTime | LocalTime | Not null | Check-in time |
-| checkOutTime | LocalTime | Nullable | Check-out time (null while active) |
-| isActive | Boolean | Not null, default false | True if currently clocked in |
+| checkInAt | Instant (UTC) | Not null | Server timestamp of the check-in |
+| checkOutAt | Instant (UTC) | Nullable | Server timestamp of the check-out; null while the period is open. Never before `checkInAt` |
+| openEmployeeId | Long (FK) | Nullable, Unique | Equals `employeeId` while the period is open, otherwise null. The unique constraint guarantees at most one open period per employee, even across concurrent sessions and pods. Derived: "active" means `checkOutAt` is null |
+| version | Long | Not null | Optimistic locking |
 | createdAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
 | updatedAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
 

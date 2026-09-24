@@ -147,3 +147,210 @@
     padding-inline: calc(var(--vaadin-padding-l) + var(--vaadin-padding-s));
   }
 }
+
+/* Time tracking panel */
+.time-tracking {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 64rem;
+  gap: var(--vaadin-gap-l);
+}
+
+/* Large buttons for older users: side by side on wide screens, stacked on narrow ones. */
+.time-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--vaadin-gap-l);
+}
+
+vaadin-button.time-action {
+  width: 100%;
+  min-height: 5.5rem;
+  font-size: calc(var(--aura-font-size-xl) * 1.5);
+  font-weight: var(--aura-font-weight-semibold);
+}
+
+vaadin-button.time-action vaadin-icon {
+  width: 1.4em;
+  height: 1.4em;
+}
+
+.time-message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--vaadin-gap-s);
+  padding: var(--vaadin-padding-m);
+  border: 1px solid var(--aura-green);
+  border-radius: var(--vaadin-radius-m);
+  background: color-mix(in srgb, var(--aura-green) 10%, var(--aura-background-color));
+  color: var(--aura-green-text);
+  font-size: var(--aura-font-size-xl);
+  line-height: var(--aura-line-height-xl);
+}
+
+.time-message vaadin-icon {
+  flex: none;
+  margin-top: 0.15em;
+}
+
+.time-message-error {
+  border-color: var(--aura-red);
+  background: color-mix(in srgb, var(--aura-red) 10%, var(--aura-background-color));
+  color: var(--aura-red-text);
+}
+
+.time-status {
+  font-size: calc(var(--aura-font-size-xl) * 1.2);
+  font-weight: var(--aura-font-weight-medium);
+}
+
+.time-status-working {
+  color: var(--aura-accent-text-color);
+}
+
+.time-date {
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-xl);
+}
+
+.time-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vaadin-gap-s) var(--vaadin-gap-xl);
+  font-size: calc(var(--aura-font-size-xl) * 1.25);
+  font-weight: var(--aura-font-weight-semibold);
+}
+
+/* Timeline: one row per work period, drawn on a 24 hour scale. */
+.timeline {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.timeline-axis {
+  position: relative;
+  height: var(--aura-line-height-s);
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-s);
+}
+
+.timeline-tick {
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.timeline-tick:first-child {
+  transform: none;
+}
+
+.timeline-tick:last-child {
+  transform: translateX(-100%);
+}
+
+.timeline-row {
+  padding-block: var(--vaadin-padding-xs);
+}
+
+.timeline-label {
+  display: block;
+  font-size: var(--aura-font-size-xl);
+  line-height: var(--aura-line-height-xl);
+}
+
+.timeline-track {
+  position: relative;
+  height: 1.5rem;
+  margin-top: var(--vaadin-padding-xs);
+  border-radius: var(--vaadin-radius-s);
+  background-color: var(--vaadin-background-container);
+  /* A faint line every four hours, matching the axis ticks. */
+  background-image: repeating-linear-gradient(to right, transparent 0, transparent calc(100% / 6 - 1px),
+      var(--vaadin-border-color-secondary) calc(100% / 6 - 1px), var(--vaadin-border-color-secondary) calc(100% / 6));
+}
+
+/* The line between check-in and check-out, with a dot at each end. */
+.timeline-bar {
+  position: absolute;
+  top: 50%;
+  height: 0.25rem;
+  min-width: 0.25rem;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: var(--aura-accent-color);
+}
+
+.timeline-bar::before,
+.timeline-bar::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  box-sizing: border-box;
+  width: 0.875rem;
+  height: 0.875rem;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: var(--aura-accent-color);
+}
+
+.timeline-bar::before {
+  left: -0.4375rem;
+}
+
+.timeline-bar::after {
+  right: -0.4375rem;
+}
+
+/* An open period: dashed line and a hollow end dot, since there is no check-out yet. */
+.timeline-bar-open {
+  background: repeating-linear-gradient(to right, var(--aura-accent-color) 0, var(--aura-accent-color) 0.5rem,
+      transparent 0.5rem, transparent 0.875rem);
+}
+
+.timeline-bar-open::after {
+  border: 2px solid var(--aura-accent-color);
+  background: var(--aura-background-color);
+}
+
+.time-dialog-fields {
+  flex-wrap: wrap;
+  gap: var(--vaadin-gap-m);
+}
+
+.time-dialog-error {
+  padding: var(--vaadin-padding-s) var(--vaadin-padding-m);
+  border: 1px solid var(--aura-red);
+  border-radius: var(--vaadin-radius-m);
+  color: var(--aura-red-text);
+}
+
+@media (max-width: 640px) {
+  .time-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Spacing and widths found during visual verification of UC-002 */
+.home-view {
+  gap: var(--vaadin-gap-l);
+}
+
+.time-message {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.timeline-axis {
+  margin-bottom: var(--vaadin-gap-xs);
+}
+
+.time-dialog-text {
+  margin: 0;
+  font-size: var(--aura-font-size-l);
+  line-height: var(--aura-line-height-l);
+}
+
+.time-dialog-error {
+  box-sizing: border-box;
+  width: 100%;
+  font-size: var(--aura-font-size-l);
+}

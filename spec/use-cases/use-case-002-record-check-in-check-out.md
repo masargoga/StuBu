@@ -4,8 +4,12 @@
 
 **Goal:** As an employee, I want to record my work times (check-in and check-out) so that my working hours are accurately tracked.
 
-**Status:** Pending
+**Status:** Implemented
 **Date:** 2024-01-15
+
+> A use case cannot be marked as **Implemented** unless all criteria in the use case implementation workflow are fulfilled.
+
+> **Revision:** AF-1 and AF-2 follow `spec.md` sections 9 and 10 (confirmation dialogs instead of plain errors). For that reason both buttons stay available at all times; the relevant one is emphasized instead of the other being disabled.
 
 ---
 
@@ -34,27 +38,24 @@ Employee clicks "Check In" button to start a new work period or "Check Out" butt
 ### Check-In Flow
 
 1. Employee clicks "Check In" button.
-2. System creates a new TimeEntry for today with:
-   - `date` = today's date
-   - `checkInTime` = current time
-   - `checkOutTime` = null
-   - `isActive` = true
+2. System creates a new TimeEntry (open work period) for the employee with:
+   - `checkInAt` = current server time
+   - `checkOutAt` = null (open)
 3. System stores the TimeEntry in the database.
-4. System displays the active time entry in the timeline.
+4. System displays the open time entry in the timeline.
 5. System displays a message: "Checked in at [time]."
-6. System marks the "Check In" button as inactive (greyed out) and enables "Check Out" button.
+6. System shows the status "Currently working since [time]" and emphasizes the "Check Out" button.
 
 ### Check-Out Flow
 
 7. Employee clicks "Check Out" button.
-8. System updates the active TimeEntry:
-   - `checkOutTime` = current time
-   - `isActive` = false
+8. System updates the open TimeEntry:
+   - `checkOutAt` = current server time
 9. System stores the updated TimeEntry in the database.
-10. System calculates the duration: `checkOutTime - checkInTime`.
-11. System adds the duration to the day's total worked hours.
+10. System calculates the duration: `checkOutAt - checkInAt`.
+11. System adds the duration to the day's total worked time and recalculates the day's break time (gaps between work periods).
 12. System displays a message: "Checked out at [time]. Worked [duration]."
-13. System marks the "Check Out" button as inactive and re-enables "Check In" button.
+13. System shows the status "Not checked in" and emphasizes the "Check In" button.
 14. System shows the completed time entry in the timeline.
 
 ---
@@ -64,20 +65,35 @@ Employee clicks "Check In" button to start a new work period or "Check Out" butt
 ### AF-1: Check-In When Already Active
 
 **Branches from:** Main Flow step 1 (Check-In)
-**Condition:** An active TimeEntry already exists for today
+**Condition:** An open TimeEntry already exists for the employee
 
-1. System displays an error message: "You are already checked in. Please check out first."
-2. User may click "Check Out" or close the message.
-3. Returns to Main Flow step 1 (user clicks "Check In" again after checking out).
+1. System does not create another open TimeEntry and does not change the existing one.
+2. System asks: "You are already checked in since [time]. Do you want to replace this check-in time?" with the choices "Cancel" and "Replace Check-In".
+3. If the employee chooses "Cancel", the dialog closes and nothing changes. Use case ends.
+4. If the employee chooses "Replace Check-In":
+   1. System sets the open TimeEntry's `checkInAt` to the current server time and stores it.
+   2. System displays a message: "Check-in replaced. You are checked in since [time]."
+   3. System writes an audit entry (UPDATE) with the old and new check-in time.
+   4. Use case ends.
 
-### AF-2: Check-Out Without Active Check-In
+### AF-2: Check-Out Without an Open Check-In
 
 **Branches from:** Main Flow step 7 (Check-Out)
-**Condition:** No active TimeEntry exists for today
+**Condition:** The employee has no open TimeEntry
 
-1. System displays an error message: "You are not currently checked in."
-2. User is prompted to click "Check In" first.
-3. Returns to Main Flow step 1.
+1. System does not reject the operation. It asks: "No open check-in was found. When did you start working?" with a date and a time input and the choices "Cancel" and "Confirm".
+2. If the employee chooses "Cancel", the dialog closes and nothing changes. Use case ends.
+3. If the employee chooses "Confirm", the system validates the input:
+   - Date and time must both be entered, otherwise: "Please enter the date and time you started working."
+   - The start must be in the past, otherwise: "The start time must be in the past."
+   - The new work period must not overlap a work period the employee already recorded, otherwise: "This period overlaps a work period you already recorded."
+   - If the input is invalid, the message is shown in the dialog, which stays open for correction.
+4. If the input is valid:
+   1. System creates a completed TimeEntry with `checkInAt` = the entered start and `checkOutAt` = current server time.
+   2. System displays a message: "Checked out at [time]. Worked [duration]."
+   3. System writes an audit entry (CREATE).
+   4. Use case ends.
+5. If, while the dialog was open, the employee became checked in (for example in another browser tab), the system creates nothing and displays: "You are already checked in since [time]."
 
 ### AF-3: Database Error During Check-In
 
@@ -85,7 +101,7 @@ Employee clicks "Check In" button to start a new work period or "Check Out" butt
 **Condition:** Database fails to create TimeEntry
 
 1. System displays an error message: "Check-in failed. Please try again."
-2. "Check In" button remains enabled.
+2. "Check In" button remains available.
 3. User can retry.
 4. Use case ends without state change.
 
@@ -95,8 +111,8 @@ Employee clicks "Check In" button to start a new work period or "Check Out" butt
 **Condition:** Database fails to update TimeEntry
 
 1. System displays an error message: "Check-out failed. Please try again."
-2. System retains active status for the TimeEntry.
-3. "Check Out" button remains enabled.
+2. System retains the open status of the TimeEntry.
+3. "Check Out" button remains available.
 4. User can retry.
 5. Use case ends without state change.
 
@@ -104,18 +120,22 @@ Employee clicks "Check In" button to start a new work period or "Check Out" butt
 
 ## Postconditions
 
-- **On success (Check-In):** 
-  - A new active TimeEntry is created in the database
+- **On success (Check-In):**
+  - A new open TimeEntry is created in the database
   - Timeline is updated to show the new entry
   - Audit log entry is created with action CREATE
 
-- **On success (Check-Out):** 
-  - The active TimeEntry is updated with check-out time
+- **On success (Check-Out):**
+  - The open TimeEntry is updated with the check-out time
   - Timeline is updated to show the completed entry
-  - Day's total worked hours are recalculated
+  - Day's total worked time and break time are recalculated
   - Audit log entry is created with action UPDATE
 
-- **On failure:** 
+- **On success (AF-1 replace):** the open TimeEntry has the new check-in time and an UPDATE audit entry records old and new value.
+
+- **On success (AF-2 confirm):** a completed TimeEntry exists for the entered period and a CREATE audit entry is written.
+
+- **On failure:**
   - No TimeEntry is created or modified
   - User sees an error message
   - UI state remains unchanged, allowing retry
@@ -126,33 +146,36 @@ Employee clicks "Check In" button to start a new work period or "Check Out" butt
 
 | ID | Rule |
 |----|------|
-| BR-01 | Only one TimeEntry per employee can be active at a time |
-| BR-02 | Check-in and check-out times use the current system time (no manual time entry in this flow) |
-| BR-03 | Multiple time entries are allowed on the same day |
-| BR-04 | All time entries must be created/updated by the employee who owns them |
-| BR-05 | Time entries cannot be created for future dates |
+| BR-01 | Only one open TimeEntry per employee can exist at a time, also with concurrent sessions or servers |
+| BR-02 | Check-in and check-out times use the current server time, never the browser clock; the only time an employee enters is the start of a missing work period (AF-2) |
+| BR-03 | Multiple time entries are allowed on the same day; break time is the sum of the gaps between them |
+| BR-04 | Time entries can only be created or changed by the employee who owns them |
+| BR-05 | Time entries cannot be created in the future: an entered start must lie before the current server time |
+| BR-06 | A work period may cross midnight, and an entered work period must not overlap another of the employee's work periods |
+| BR-07 | The day's worked time counts the full duration of every period that started today, plus the time elapsed on an open period |
 
 ---
 
 ## Tests
 
-- [ ] Main Flow Check-In covered (steps 1–6)
-- [ ] Main Flow Check-Out covered (steps 7–14)
-- [ ] AF-1 (Already Active) covered
-- [ ] AF-2 (Not Checked In) covered
-- [ ] AF-3 (Check-In Database Error) covered
-- [ ] AF-4 (Check-Out Database Error) covered
-- [ ] BR-01–BR-05 covered
+- [x] Main Flow Check-In covered (steps 1–6)
+- [x] Main Flow Check-Out covered (steps 7–14)
+- [x] AF-1 (Already Checked In: cancel, replace) covered
+- [x] AF-2 (No Open Check-In: cancel, confirm, validation, concurrent check-in) covered
+- [x] AF-3 (Check-In Database Error) covered
+- [x] AF-4 (Check-Out Database Error) covered
+- [x] BR-01–BR-07 covered
 
 ---
 
 ## UI Surface
 
-- **Time Tracking Panel:** Shows current day's timeline with all time entries and total worked hours.
-- **Check-In / Check-Out Buttons:** Prominent buttons to start/end work periods. Only one is enabled at a time.
-- **Timeline Display:** Shows all completed time entries for the day with check-in and check-out times, duration, and status.
-- **Messages:** Success and error messages displayed prominently.
+- **Time Tracking Panel:** Shows the current working status, today's date, today's timeline with all time entries, and total worked and break time. It is part of the home page after login.
+- **Check-In / Check-Out Buttons:** Large, prominent buttons to start/end work periods. Both stay available; the one that fits the current status is emphasized.
+- **Timeline Display:** Shows the day's time entries as bars on a 24 hour scale with check-in and check-out times, duration, and status (open periods look different from completed ones).
+- **Messages:** Success and error messages displayed prominently and announced to screen readers.
+- **Dialogs:** Replace check-in confirmation (AF-1); missing check-in time entry with date and time (AF-2).
 
 | Page | Access |
 |------|--------|
-| Time Tracking Dashboard | Authenticated Employee |
+| Time Tracking Dashboard (home page) | Authenticated Employee |

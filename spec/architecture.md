@@ -67,3 +67,12 @@ com.stubu.specdriven/
 - **Tests:** use H2 only. Do not require a running PostgreSQL instance or Docker to run `./mvnw test`.
 - **Dependencies** (managed by the Spring Boot BOM, Spring Boot 4 starter names): `spring-boot-starter-data-jpa`, `spring-boot-starter-flyway`, `flyway-database-postgresql`, `org.postgresql:postgresql` (runtime), `com.h2database:h2` (runtime, used by the `dev` profile and tests), plus `spring-boot-starter-security`, `spring-boot-starter-security-oauth2-client` and `spring-boot-starter-security-test` (test).
 - **Config files:** `application.properties` (production/PostgreSQL), `application-dev.properties` (H2 plus sample employees from `db/dev`), and `src/test/resources/application-test.properties` (H2). Tests must not rely on the main file being shadowed.
+
+---
+
+## 6. Time Handling
+
+- **Server clock:** every recorded timestamp comes from the injectable `java.time.Clock` bean (`ClockConfiguration`); the browser clock is never used. Tests replace the clock with a controllable one.
+- **Storage:** work periods and audit records are absolute UTC instants (`TIMESTAMP WITH TIME ZONE` / `Instant`), so periods can cross midnight.
+- **Presentation:** "today" and all displayed times use the browser's time zone (fetched with `retrieveExtendedClientDetails`), falling back to the server zone. Times and dates are formatted for the user's locale.
+- **Invariants in the database:** at most one open work period per employee (unique `open_employee_id`), and a check-out never precedes its check-in (check constraint). Concurrent updates are detected with a `version` column.

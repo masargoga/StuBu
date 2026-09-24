@@ -540,10 +540,15 @@ class UC001AuthenticateWithIam extends SpringBrowserlessTest {
         Employee employee = employees.findByEmailIgnoreCase(email).orElseGet(() -> {
             Department department = departments.findAll().stream().findFirst()
                     .orElseGet(() -> departments.save(new Department("Engineering")));
-            return new Employee(email, firstNameOf(email), "Tester", role, department.getId());
+            return new Employee(email, firstNameOf(email), lastNameOf(role), role, department.getId());
         });
         employee.setActive(active);
         return employees.save(employee);
+    }
+
+    /** Matches the names @WithEmployee uses (Alice Employee, Bob Manager, Carol Admin), which share these rows. */
+    private static String lastNameOf(Role role) {
+        return role.name().charAt(0) + role.name().substring(1).toLowerCase(Locale.ROOT);
     }
 
     private static String firstNameOf(String email) {
