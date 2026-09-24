@@ -125,6 +125,15 @@ public class Timesheet {
         return rejectionReason;
     }
 
+    /** Hands the timesheet in for approval; only a draft can be submitted. */
+    public void submit(Instant at) {
+        if (status != TimesheetStatus.DRAFT) {
+            throw new IllegalStateException("Only a draft can be submitted, but the status is " + status);
+        }
+        status = TimesheetStatus.SUBMITTED;
+        submittedAt = at;
+    }
+
     public void setStatus(TimesheetStatus status) {
         this.status = status;
     }

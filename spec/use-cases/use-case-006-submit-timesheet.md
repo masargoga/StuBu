@@ -4,8 +4,12 @@
 
 **Goal:** As an employee, I want to submit my completed monthly timesheet for manager approval so that the approval workflow can proceed.
 
-**Status:** Pending
+**Status:** Implemented
 **Date:** 2024-01-15
+
+> A use case cannot be marked as **Implemented** unless all criteria in the use case implementation workflow are fulfilled.
+
+> **Revision:** The button lives on the monthly timesheet page (UC-005). A timesheet can be submitted once its month is over in the user's time zone (until then the button is disabled and says from when it becomes available), which is what "all time entries for the month are finalized" means here; a check-in without check-out in the month also blocks the submission. An empty month or an open check-in is reported when the button is pressed (AF-2), without the confirmation dialog. The status change and the audit entry (action SUBMIT, old and new status as JSON) are written in one transaction, and two sessions submitting at the same moment cannot both succeed (optimistic locking on the timesheet). Once submitted, the entries of the month can no longer be corrected or deleted (checked by the time entry service). The manager's notification is an email behind a `NotificationService` interface: `spring-boot-starter-mail` sends it when `spring.mail.host` is configured, otherwise it is only logged. The texts are translated (`stubu.notifications.locale`). The notification is sent after the submission has been stored; if it fails, that is logged and the submission stands, and an employee without a manager can still submit. The manager's own list of waiting timesheets belongs to UC-007.
 
 ---
 
@@ -124,12 +128,12 @@ Employee navigates to the Monthly Timesheet view and clicks "Submit Timesheet" b
 
 ## Tests
 
-- [ ] Main Flow covered (steps 1–10)
-- [ ] AF-1 (Already Submitted) covered
-- [ ] AF-2 (No Entries) covered
-- [ ] AF-3 (Cancel) covered
-- [ ] AF-4 (Database Error) covered
-- [ ] BR-01–BR-05 covered
+- [x] Main Flow covered (steps 1–10)
+- [x] AF-1 (Already Submitted) covered
+- [x] AF-2 (No Entries) covered
+- [x] AF-3 (Cancel) covered
+- [x] AF-4 (Database Error) covered
+- [x] BR-01–BR-05 covered
 
 ---
 

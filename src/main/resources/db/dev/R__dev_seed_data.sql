@@ -39,3 +39,11 @@ FROM employee e, system_range(1, 8) AS r(x) WHERE e.email = 'alice.employee@exam
 -- A public holiday three days ago (management of holidays is UC-012).
 INSERT INTO public_holiday (holiday_date, name, created_at)
 VALUES (DATEADD('DAY', -3, CURRENT_DATE), 'Company Day', CURRENT_TIMESTAMP);
+
+-- Alice also worked three days last month, so that her timesheet for that (finished) month can be submitted.
+INSERT INTO time_entry (employee_id, check_in_at, check_out_at, open_employee_id, version, created_at, updated_at)
+SELECT e.id,
+       DATEADD('HOUR', 9, CAST(DATEADD('DAY', r.x, DATEADD('MONTH', -1, DATE_TRUNC('MONTH', CURRENT_DATE))) AS TIMESTAMP WITH TIME ZONE)),
+       DATEADD('HOUR', 17, CAST(DATEADD('DAY', r.x, DATEADD('MONTH', -1, DATE_TRUNC('MONTH', CURRENT_DATE))) AS TIMESTAMP WITH TIME ZONE)),
+       NULL, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM employee e, system_range(7, 9) AS r(x) WHERE e.email = 'alice.employee@example.com';

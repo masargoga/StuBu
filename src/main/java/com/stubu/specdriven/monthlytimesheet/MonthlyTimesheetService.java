@@ -68,7 +68,8 @@ public class MonthlyTimesheetService {
         Instant from = month.atDay(1).atStartOfDay(zone).toInstant();
         Instant to = month.plusMonths(1).atDay(1).atStartOfDay(zone).toInstant();
         Map<LocalDate, List<TimeEntry>> byDay = new TreeMap<>();
-        for (TimeEntry entry : entries.findStartedBetween(employeeId, from, to)) {
+        List<TimeEntry> monthEntries = entries.findStartedBetween(employeeId, from, to);
+        for (TimeEntry entry : monthEntries) {
             byDay.computeIfAbsent(entry.getCheckInAt().atZone(zone).toLocalDate(), day -> new ArrayList<>())
                     .add(entry);
         }
@@ -96,7 +97,8 @@ public class MonthlyTimesheetService {
         }
         return new MonthlyTimesheet(month, timesheet.getStatus(), timesheet.getSubmittedAt(),
                 timesheet.getApprovedAt(), nameOf(timesheet.getApprovedBy()), timesheet.getRejectedAt(),
-                timesheet.getRejectionReason(), List.copyOf(days), totalWorked, totalBreaks);
+                timesheet.getRejectionReason(), List.copyOf(days), totalWorked, totalBreaks,
+                SubmissionRules.blocker(month, timesheet.getStatus(), monthEntries, currentMonth(zone)).orElse(null));
     }
 
     private String nameOf(Long employeeId) {

@@ -13,10 +13,12 @@ import com.vaadin.flow.component.badge.Badge;
 import com.vaadin.flow.component.badge.BadgeVariant;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -54,7 +56,8 @@ import org.springframework.dao.DataAccessException;
  * The employee's timesheet for a calendar month (UC-005): every day with its work periods, daily and monthly
  * totals, weekends and public holidays, and the status of the timesheet. The month is chosen with the arrows or
  * the month selector; only the current and earlier months can be shown. Work periods can be corrected while the
- * timesheet is a draft. Submitting is not available yet (UC-006), so the submit buttons are disabled.
+ * timesheet is a draft. A finished month can be submitted for approval (UC-006); resubmitting a rejected
+ * timesheet is not available yet (UC-008).
  */
 @Route(value = MonthlyTimesheetView.ROUTE, layout = MainLayout.class)
 @PermitAll
@@ -76,6 +79,7 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
 
     private final transient MonthlyTimesheetService service;
     private final transient TimeEntryService entryService;
+    private final transient TimesheetSubmissionService submissionService;
     private final Long employeeId;
     private ZoneId zone;
     private YearMonth month;
@@ -107,9 +111,10 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
     private final Grid<DayLine> table = new Grid<>();
 
     public MonthlyTimesheetView(AuthenticationContext authenticationContext, MonthlyTimesheetService service,
-            TimeEntryService entryService) {
+            TimeEntryService entryService, TimesheetSubmissionService submissionService) {
         this.service = service;
         this.entryService = entryService;
+        this.submissionService = submissionService;
         this.zone = entryService.defaultZone();
         this.month = service.currentMonth(zone);
         this.employeeId = authenticationContext.getAuthenticatedUser(Object.class)
@@ -138,8 +143,8 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
         statusBadge.setTestId("timesheet-status");
         statusText.setTestId("status-text");
         submit.setTestId("submit-timesheet");
-        submit.setEnabled(false); // UC-006
         submit.addThemeVariants(ButtonVariant.PRIMARY);
+        submit.addClickListener(event -> submitClicked());
         submitNote.addClassName("status-note");
         Div statusLine = new Div(statusBadge, statusText);
         statusLine.addClassName("status-line");
@@ -289,7 +294,68 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
         refresh();
     }
 
-    // --- rendering ---------------------------------------------------------------------------------
+// --- submitting --------------------------------------------------------------------------------
+
+private void submitClicked() {
+    if (sheet == null) {
+        return;
+    }
+    SubmitBlocker blocker = sheet.submitBlocker();
+    if (blocker != null) {
+        message = new Message("timesheet.submit.blocked." + blocker.name(), true);
+        refresh();
+        return;
+    }
+    openSubmitDialog();
+}
+
+/** Asks for confirmation, because a submitted timesheet can no longer be changed by the employee. */
+private void openSubmitDialog() {
+    Dialog dialog = new Dialog();
+    dialog.setWidth("min(34rem, 92vw)");
+    dialog.setHeaderTitle(getTranslation("timesheet.submit.title"));
+    Paragraph question = new Paragraph(getTranslation("timesheet.submit.confirm"));
+    question.addClassName("time-dialog-text");
+    Div error = new Div();
+    error.addClassName("time-dialog-error");
+    error.getElement().setAttribute("role", "alert");
+    error.setVisible(false);
+    VerticalLayout body = new VerticalLayout(question, error);
+    body.setPadding(false);
+    body.addClassName("time-dialog-content");
+    dialog.add(body);
+
+    Button cancel = new Button(getTranslation("time.cancel"), event -> dialog.close());
+    cancel.addThemeVariants(ButtonVariant.TERTIARY);
+    cancel.setTestId("submit-cancel");
+    cancel.addClassName("time-dialog-button");
+    Button confirm = new Button(getTranslation("timesheet.submit.action"));
+    confirm.addThemeVariants(ButtonVariant.PRIMARY);
+    confirm.setTestId("submit-confirm");
+    confirm.addClassName("time-dialog-button");
+    confirm.addClickListener(event -> submit(dialog, error));
+    dialog.getFooter().add(cancel, confirm);
+    dialog.addClosedListener(event -> dialog.removeFromParent());
+    dialog.open();
+}
+
+private void submit(Dialog dialog, Div error) {
+    try {
+        submissionService.submit(employeeId, month, zone);
+        message = new Message("timesheet.submit.done", false);
+    } catch (SubmissionRejectedException rejected) {
+        message = new Message("timesheet.submit.blocked." + rejected.getBlocker().name(), true);
+    } catch (DataAccessException e) {
+        log.error("Submitting the timesheet {} of employee {} failed", month, employeeId, e);
+        error.setText(getTranslation("timesheet.submit.failed"));
+        error.setVisible(true); // stays open: Submit again to retry
+        return;
+    }
+    dialog.close();
+    refresh();
+}
+
+// --- rendering ---------------------------------------------------------------------------------
 
     @Override
     public void localeChange(LocaleChangeEvent event) {
@@ -365,7 +431,8 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
         }
         statusText.setText(switch (status) {
             case DRAFT -> getTranslation("timesheet.status.DRAFT");
-            case SUBMITTED -> getTranslation("timesheet.status.SUBMITTED");
+            case SUBMITTED -> sheet.submittedAt() == null ? getTranslation("timesheet.status.SUBMITTED.nodate")
+                    : getTranslation("timesheet.status.SUBMITTED", date(sheet.submittedAt(), locale));
             case APPROVED -> sheet.approvedByName() == null
                     ? getTranslation("timesheet.status.APPROVED.noone", date(sheet.approvedAt(), locale))
                     : getTranslation("timesheet.status.APPROVED", date(sheet.approvedAt(), locale),
@@ -375,12 +442,18 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
                     : getTranslation("timesheet.status.REJECTED", date(sheet.rejectedAt(), locale),
                             sheet.rejectionReason());
         });
-        // Submitting and resubmitting belong to UC-006 and UC-008: the buttons show what will be possible.
+        // A draft is submitted once its month is over (UC-006). Resubmitting a rejected timesheet is UC-008.
         boolean offersSubmit = status == TimesheetStatus.DRAFT || status == TimesheetStatus.REJECTED;
+        boolean monthOver = sheet.submitBlocker() != SubmitBlocker.MONTH_NOT_ENDED;
         submit.setText(getTranslation(status == TimesheetStatus.REJECTED ? "timesheet.resubmit" : "timesheet.submit"));
         submit.setVisible(offersSubmit);
-        submitNote.setText(offersSubmit ? getTranslation("timesheet.submit.unavailable") : "");
-        submitNote.setVisible(offersSubmit);
+        submit.setEnabled(status == TimesheetStatus.DRAFT && monthOver);
+        String note = status == TimesheetStatus.REJECTED ? getTranslation("timesheet.submit.unavailable")
+                : !monthOver ? getTranslation("timesheet.submit.notYet", date(month.plusMonths(1).atDay(1)
+                        .atStartOfDay(zone).toInstant(), locale))
+                        : "";
+        submitNote.setText(note);
+        submitNote.setVisible(!note.isEmpty());
         if (!sheet.editable()) {
             submitNote.setVisible(true);
             submitNote.setText(getTranslation("timesheet.lockedNote"));

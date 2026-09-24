@@ -644,3 +644,10 @@ vaadin-grid::part(holiday-cell) {
 .app-navigation vaadin-side-nav-item {
   min-height: 2.75rem;
 }
+
+/* UC-006: the submit button is the main action of the page, so it is large. */
+.status-actions vaadin-button {
+  min-height: 3rem;
+  padding-inline: var(--vaadin-padding-l);
+  font-size: var(--aura-font-size-xl);
+}

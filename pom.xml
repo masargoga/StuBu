@@ -59,6 +59,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security-oauth2-client</artifactId>
         </dependency>
+        <!-- Email notifications (only sent when spring.mail.host is configured) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
         <!-- Persistence: JPA/Hibernate with Flyway migrations -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
