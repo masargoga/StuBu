@@ -7,6 +7,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Paragraph;
@@ -14,6 +15,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.timepicker.TimePicker;
 import com.vaadin.flow.i18n.LocaleChangeEvent;
 import com.vaadin.flow.i18n.LocaleChangeObserver;
@@ -23,10 +25,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -43,6 +47,7 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
 
     private static final Logger log = LoggerFactory.getLogger(TimeTrackingPanel.class);
     private static final String DIALOG_WIDTH = "min(34rem, 92vw)";
+    private static final int REASON_MAX_LENGTH = 500;
 
     /** The last message shown to the user; kept as key and arguments so it can be translated again. */
     private record Message(String key, boolean error, Object... args) {
@@ -127,6 +132,7 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
         totals.addClassName("time-totals");
         workedDetail.addClassName("time-total-detail");
 
+        timeline.setEntryActions(this::openEditDialog, this::openDeleteDialog);
         day.setPadding(false);
         day.setSpacing(true);
         day.add(status, clock, emptyHint, timeline, totals, workedDetail);
@@ -270,14 +276,17 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
         question.addClassName("time-dialog-text");
         VerticalLayout content = new VerticalLayout(question, fields, error);
         content.setPadding(false);
+        content.addClassName("time-dialog-content");
         dialog.add(content);
 
         Button cancel = new Button(getTranslation("time.cancel"), event -> dialog.close());
         cancel.addThemeVariants(ButtonVariant.TERTIARY);
         cancel.setTestId("missing-cancel");
+        cancel.addClassName("time-dialog-button");
         Button confirm = new Button(getTranslation("time.confirm"));
         confirm.addThemeVariants(ButtonVariant.PRIMARY);
         confirm.setTestId("missing-confirm");
+        confirm.addClassName("time-dialog-button");
         confirm.addClickListener(event -> {
             if (startDate.isEmpty() || startTime.isEmpty()) {
                 showDialogError(error, getTranslation("time.missing.required"));
@@ -316,6 +325,176 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
         error.setVisible(true);
     }
 
+    // --- correcting and deleting entries -----------------------------------------------------------
+
+    private Optional<TimeEntry> entryById(long entryId) {
+        return summary == null ? Optional.empty()
+                : summary.entries().stream().filter(entry -> entry.getId() == entryId).findFirst();
+    }
+
+    private void openEditDialog(Long entryId) {
+        Optional<TimeEntry> found = entryById(entryId);
+        if (found.isEmpty()) {
+            refresh();
+            return;
+        }
+        TimeEntry entry = found.get();
+        LocalDateTime in = entry.getCheckInAt().atZone(zone).toLocalDateTime();
+        LocalDateTime out = entry.getCheckOutAt() == null ? null : entry.getCheckOutAt().atZone(zone).toLocalDateTime();
+
+        Dialog dialog = new Dialog();
+        dialog.setWidth(DIALOG_WIDTH);
+        dialog.setHeaderTitle(getTranslation("time.edit.title"));
+
+        // The date of an entry cannot change, so the check-in date is read-only.
+        DatePicker inDate = new DatePicker(getTranslation("time.edit.checkInDate"), in.toLocalDate());
+        inDate.setReadOnly(true);
+        TimePicker inTime = timePicker(getTranslation("time.edit.checkInTime"), in.toLocalTime());
+        // The check-out has its own date so that a period may end after midnight.
+        DatePicker outDate = new DatePicker(getTranslation("time.edit.checkOutDate"),
+                out == null ? null : out.toLocalDate());
+        TimePicker outTime = timePicker(getTranslation("time.edit.checkOutTime"), out == null ? null : out.toLocalTime());
+        TextField reason = new TextField(getTranslation("time.edit.reason"));
+        reason.setMaxLength(REASON_MAX_LENGTH);
+        reason.setWidthFull();
+        Div error = errorBox();
+
+        FormLayout form = new FormLayout(inDate, inTime, outDate, outTime, reason);
+        form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("28rem", 2));
+        form.setColspan(reason, 2);
+        VerticalLayout content = new VerticalLayout(form, error);
+        content.setPadding(false);
+        content.addClassName("time-dialog-content");
+        dialog.add(content);
+
+        Button cancel = new Button(getTranslation("time.cancel"), event -> dialog.close());
+        cancel.addThemeVariants(ButtonVariant.TERTIARY);
+        cancel.setTestId("edit-cancel");
+        cancel.addClassName("time-dialog-button");
+        Button save = new Button(getTranslation("time.save"));
+        save.addThemeVariants(ButtonVariant.PRIMARY);
+        save.setTestId("edit-save");
+        save.addClassName("time-dialog-button");
+        save.addClickListener(event -> {
+            if (inTime.isEmpty()) {
+                showDialogError(error, getTranslation("time.edit.error.MISSING_START"));
+                return;
+            }
+            boolean anyCheckOut = !outDate.isEmpty() || !outTime.isEmpty();
+            if (anyCheckOut && (outDate.isEmpty() || outTime.isEmpty())) {
+                showDialogError(error, getTranslation("time.edit.error.CHECK_OUT_INCOMPLETE"));
+                return;
+            }
+            Instant newCheckIn = resolve(LocalDateTime.of(inDate.getValue(), inTime.getValue()),
+                    entry.getCheckInAt());
+            Instant newCheckOut = anyCheckOut
+                    ? resolve(LocalDateTime.of(outDate.getValue(), outTime.getValue()), entry.getCheckOutAt())
+                    : null;
+            saveCorrection(dialog, error, entry.getId(), newCheckIn, newCheckOut, reason.getValue());
+        });
+        dialog.getFooter().add(cancel, save);
+        dialog.addClosedListener(event -> dialog.removeFromParent());
+        dialog.open();
+    }
+
+    private TimePicker timePicker(String label, LocalTime value) {
+        TimePicker picker = new TimePicker(label);
+        picker.setStep(Duration.ofMinutes(1));
+        picker.setValue(value == null ? null : value.truncatedTo(ChronoUnit.MINUTES));
+        return picker;
+    }
+
+    /** Times are entered by the minute; a time the user did not touch keeps its exact recorded second. */
+    private Instant resolve(LocalDateTime entered, Instant original) {
+        Instant candidate = entered.atZone(zone).toInstant();
+        return original != null && candidate.equals(original.truncatedTo(ChronoUnit.MINUTES)) ? original : candidate;
+    }
+
+    private void saveCorrection(Dialog dialog, Div error, long entryId, Instant checkIn, Instant checkOut,
+            String reason) {
+        try {
+            service.correct(employeeId, entryId, checkIn, checkOut, reason, zone);
+            dialog.close();
+            show(new Message("time.edit.done", false));
+        } catch (InvalidWorkPeriodException invalid) {
+            showDialogError(error, getTranslation("time.edit.error." + invalid.getReason().name()));
+            return;
+        } catch (EntryLockedException locked) {
+            dialog.close();
+            show(new Message("time.locked", true));
+        } catch (EntryNotFoundException gone) {
+            dialog.close();
+            show(new Message("time.entry.gone", true));
+        } catch (DataAccessException e) {
+            log.error("Correcting entry {} failed for employee {}", entryId, employeeId, e);
+            showDialogError(error, getTranslation("time.edit.saveFailed"));
+            return;
+        }
+        refresh();
+    }
+
+    private void openDeleteDialog(Long entryId) {
+        Optional<TimeEntry> found = entryById(entryId);
+        if (found.isEmpty()) {
+            refresh();
+            return;
+        }
+        Dialog dialog = new Dialog();
+        dialog.setWidth(DIALOG_WIDTH);
+        dialog.setHeaderTitle(getTranslation("time.delete.title"));
+
+        Paragraph question = new Paragraph(getTranslation("time.delete.text"));
+        question.addClassName("time-dialog-text");
+        TextField reason = new TextField(getTranslation("time.edit.reason"));
+        reason.setMaxLength(REASON_MAX_LENGTH);
+        reason.setWidthFull();
+        Div error = errorBox();
+        VerticalLayout content = new VerticalLayout(question, reason, error);
+        content.setPadding(false);
+        content.addClassName("time-dialog-content");
+        dialog.add(content);
+
+        Button cancel = new Button(getTranslation("time.cancel"), event -> dialog.close());
+        cancel.addThemeVariants(ButtonVariant.TERTIARY);
+        cancel.setTestId("delete-cancel");
+        cancel.addClassName("time-dialog-button");
+        Button confirm = new Button(getTranslation("time.delete"));
+        confirm.addThemeVariants(ButtonVariant.PRIMARY, ButtonVariant.ERROR);
+        confirm.setTestId("delete-confirm");
+        confirm.addClassName("time-dialog-button");
+        confirm.addClickListener(event -> deleteEntry(dialog, error, entryId, reason.getValue()));
+        dialog.getFooter().add(cancel, confirm);
+        dialog.addClosedListener(event -> dialog.removeFromParent());
+        dialog.open();
+    }
+
+    private void deleteEntry(Dialog dialog, Div error, long entryId, String reason) {
+        try {
+            service.delete(employeeId, entryId, reason, zone);
+            dialog.close();
+            show(new Message("time.delete.done", false));
+        } catch (EntryLockedException locked) {
+            dialog.close();
+            show(new Message("time.locked", true));
+        } catch (EntryNotFoundException gone) {
+            dialog.close();
+            show(new Message("time.entry.gone", true));
+        } catch (DataAccessException e) {
+            log.error("Deleting entry {} failed for employee {}", entryId, employeeId, e);
+            showDialogError(error, getTranslation("time.edit.saveFailed")); // stays open: Delete again to retry
+            return;
+        }
+        refresh();
+    }
+
+    private static Div errorBox() {
+        Div error = new Div();
+        error.addClassName("time-dialog-error");
+        error.getElement().setAttribute("role", "alert");
+        error.setVisible(false);
+        return error;
+    }
+
     // --- state and rendering ---------------------------------------------------------------------
 
     private void show(Message newMessage) {
@@ -352,7 +531,8 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
                 .append(service.now().truncatedTo(ChronoUnit.MINUTES));
         if (summary != null) {
             summary.entries().forEach(entry -> signature.append('|').append(entry.getId()).append(',')
-                    .append(entry.getCheckInAt()).append(',').append(entry.getCheckOutAt()));
+                    .append(entry.getCheckInAt()).append(',').append(entry.getCheckOutAt()).append(',')
+                    .append(summary.isEditable(entry)));
         }
         return signature.toString();
     }

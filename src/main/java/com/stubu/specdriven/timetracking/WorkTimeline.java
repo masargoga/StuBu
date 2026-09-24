@@ -6,7 +6,8 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.shared.Tooltip;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.function.SerializableConsumer;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -18,14 +19,26 @@ import java.util.Locale;
  * so check-in and check-out are visibly connected, and an open period is drawn differently from a completed
  * one.
  *
- * <p>The edit control is disabled until time entries can be corrected (UC-004).
+ * <p>Every row has Edit and Delete controls; they are disabled, with an explanation, once the timesheet of the
+ * entry was submitted.
  */
 public class WorkTimeline extends Div {
 
     private static final int[] AXIS_HOURS = { 0, 4, 8, 12, 16, 20, 24 };
 
+    private SerializableConsumer<Long> editHandler = id -> {
+    };
+    private SerializableConsumer<Long> deleteHandler = id -> {
+    };
+
     public WorkTimeline() {
         addClassName("timeline");
+    }
+
+    /** What happens when the user chooses Edit or Delete on an entry; called with the entry's id. */
+    public void setEntryActions(SerializableConsumer<Long> onEdit, SerializableConsumer<Long> onDelete) {
+        this.editHandler = onEdit;
+        this.deleteHandler = onDelete;
     }
 
     /** Rebuilds the timeline for the given day. */
@@ -75,7 +88,8 @@ public class WorkTimeline extends Div {
             status.addThemeVariants(BadgeVariant.SUCCESS);
         }
 
-        Div header = new Div(label, status, editControl(start));
+        boolean editable = day.isEditable(entry);
+        Div header = new Div(label, status, actions(entry.getId(), start, editable));
         header.addClassName("timeline-row-header");
 
         Instant end = entry.isActive() ? now : entry.getCheckOutAt();
@@ -91,24 +105,43 @@ public class WorkTimeline extends Div {
         track.addClassName("timeline-track");
         track.getElement().setAttribute("aria-hidden", "true");
 
-        Div row = new Div(header, track);
+        Div row = editable ? new Div(header, track) : new Div(header, lockedNote(), track);
         row.addClassName("timeline-row");
         row.setClassName("timeline-row-open", entry.isActive());
         row.getElement().setAttribute("role", "listitem");
         return row;
     }
 
-    /** A disabled edit button; a wrapper carries the explanation because disabled buttons show no tooltip. */
-    private Span editControl(String start) {
-        Button edit = new Button(getTranslation("time.edit"));
-        edit.addThemeVariants(ButtonVariant.TERTIARY, ButtonVariant.SMALL);
-        edit.setEnabled(false);
+    /** Edit and Delete for one entry; disabled when the entry's timesheet does not allow corrections. */
+    private Span actions(Long entryId, String start, boolean editable) {
+        Button edit = new Button(getTranslation("time.edit"), VaadinIcon.EDIT.create());
         edit.setTestId("edit-entry");
         edit.getElement().setAttribute("aria-label", getTranslation("time.edit.label", start));
-        Span wrapper = new Span(edit);
-        wrapper.addClassName("timeline-edit");
-        Tooltip.forComponent(wrapper).withText(getTranslation("time.edit.unavailable"));
-        return wrapper;
+        edit.addClickListener(event -> editHandler.accept(entryId));
+
+        Button delete = new Button(getTranslation("time.delete"), VaadinIcon.TRASH.create());
+        delete.setTestId("delete-entry");
+        delete.addThemeVariants(ButtonVariant.ERROR);
+        delete.getElement().setAttribute("aria-label", getTranslation("time.delete.label", start));
+        delete.addClickListener(event -> deleteHandler.accept(entryId));
+
+        for (Button button : new Button[] { edit, delete }) {
+            button.addThemeVariants(ButtonVariant.TERTIARY);
+            button.setEnabled(editable);
+        }
+        Span actions = new Span(edit, delete);
+        actions.addClassName("timeline-actions");
+        return actions;
+    }
+
+    /** Why the entry cannot be corrected, shown right in its row. */
+    private Div lockedNote() {
+        var icon = VaadinIcon.LOCK.create();
+        icon.getElement().setAttribute("aria-hidden", "true");
+        Div note = new Div(icon, new Span(getTranslation("time.locked")));
+        note.addClassName("timeline-locked");
+        note.setTestId("entry-locked");
+        return note;
     }
 
     private static double clamp(double fraction) {

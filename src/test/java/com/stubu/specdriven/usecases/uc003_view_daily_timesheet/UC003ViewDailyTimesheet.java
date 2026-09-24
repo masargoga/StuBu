@@ -122,7 +122,7 @@ class UC003ViewDailyTimesheet extends SpringBrowserlessTest {
     }
 
     @Test
-    void mainFlow_everyEntryHasAnEditControlThatIsNotAvailableYet() {
+    void mainFlow_everyEntryHasEditAndDeleteControls() {
         clock.set(Instant.parse("2026-09-23T10:00:00Z"));
         service.checkOutWithMissingCheckIn(alice, Instant.parse("2026-09-23T08:00:00Z"));
         service.checkIn(alice);
@@ -130,9 +130,12 @@ class UC003ViewDailyTimesheet extends SpringBrowserlessTest {
         TimeTrackingPanel panel = openPanel();
 
         List<Button> edits = buttons(panel, "edit-entry");
+        List<Button> deletes = buttons(panel, "delete-entry");
         assertEquals(2, edits.size(), "One edit control per entry");
-        assertTrue(edits.stream().noneMatch(Button::isEnabled), "Editing arrives with UC-004");
+        assertEquals(2, deletes.size(), "One delete control per entry");
+        assertTrue(edits.stream().allMatch(Button::isEnabled), "Correcting entries is UC-004");
         assertTrue(edits.stream().allMatch(edit -> "Edit".equals(edit.getText())));
+        assertTrue(deletes.stream().allMatch(delete -> "Delete".equals(delete.getText())));
         assertTrue(normalize(edits.getFirst().getElement().getAttribute("aria-label")).contains("8:00 AM"));
     }
 

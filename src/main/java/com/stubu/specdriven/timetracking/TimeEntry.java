@@ -101,6 +101,23 @@ public class TimeEntry {
         checkInAt = at;
     }
 
+    /**
+     * Corrects both times. A completed period stays completed; an open period may be closed by giving a
+     * check-out or kept open with {@code null}.
+     */
+    public void correct(Instant newCheckInAt, Instant newCheckOutAt) {
+        if (newCheckOutAt == null && !isActive()) {
+            throw new IllegalStateException("A completed work period cannot be reopened");
+        }
+        if (newCheckOutAt != null && newCheckOutAt.isBefore(newCheckInAt)) {
+            throw new IllegalArgumentException("Check-out must not be before check-in");
+        }
+        checkInAt = newCheckInAt;
+        checkOutAt = newCheckOutAt;
+        openEmployeeId = newCheckOutAt == null ? employeeId : null;
+    }
+
+
     /** True while the employee is working, i.e. there is no check-out yet. */
     public boolean isActive() {
         return checkOutAt == null;

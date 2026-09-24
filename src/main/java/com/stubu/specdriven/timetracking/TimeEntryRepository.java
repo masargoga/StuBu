@@ -28,4 +28,14 @@ public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
               and coalesce(t.checkOutAt, :now) > :start""")
     boolean overlaps(@Param("employeeId") Long employeeId, @Param("start") Instant start, @Param("end") Instant end,
             @Param("now") Instant now);
+
+    /** Like {@link #overlaps}, ignoring one entry (the entry being corrected). */
+    @Query("""
+            select count(t) > 0 from TimeEntry t
+            where t.employeeId = :employeeId
+              and t.id <> :excludedId
+              and t.checkInAt < :end
+              and coalesce(t.checkOutAt, :now) > :start""")
+    boolean overlapsOtherThan(@Param("employeeId") Long employeeId, @Param("excludedId") Long excludedId,
+            @Param("start") Instant start, @Param("end") Instant end, @Param("now") Instant now);
 }

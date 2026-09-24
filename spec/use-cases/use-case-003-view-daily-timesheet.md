@@ -9,7 +9,7 @@
 
 > A use case cannot be marked as **Implemented** unless all criteria in the use case implementation workflow are fulfilled.
 
-> **Revision:** The view is the time tracking panel that UC-002 already provides on the home page; UC-003 completes it. The edit link is shown disabled until UC-004 (Correct Historical Time Entries) provides the editor. The panel refreshes itself while it is open, so the current time, the elapsed time and the totals stay correct without a reload.
+> **Revision:** The view is the time tracking panel that UC-002 already provides on the home page; UC-003 completes it. The panel refreshes itself while it is open, so the current time, the elapsed time and the totals stay correct without a reload.
 
 ---
 
@@ -42,7 +42,7 @@ Employee navigates to the home page (the "Time Tracking" / "Today" view).
 4. System displays total worked hours on the dashboard (e.g., "Total hours today: 7h 45m") and the total break time.
 5. System displays the current time and, if an entry is open, elapsed time since check-in.
 6. System shows "Check-In" and "Check-Out" buttons (the one that fits the current status is emphasized, see UC-002).
-7. System displays an "Edit" control on every entry. Until UC-004 exists it is disabled and explains that editing is not available yet.
+7. System displays "Edit" and "Delete" controls on every entry (see UC-004 for what they do).
 8. While the page stays open, System refreshes the current time, the elapsed time and the totals automatically (every 30 seconds).
 
 ---
@@ -87,7 +87,7 @@ Employee navigates to the home page (the "Time Tracking" / "Today" view).
 - **On success:**
   - Timeline is displayed with all entries for today
   - Total worked hours are calculated and displayed
-  - Buttons and the edit control are shown
+  - Buttons and the edit and delete controls are shown
 
 - **On failure:**
   - Error message is displayed
@@ -124,7 +124,7 @@ Employee navigates to the home page (the "Time Tracking" / "Today" view).
   - Total worked hours summary (e.g., "Total hours today: 7h 45m") and break time.
   - Current time display and, while working, the elapsed time.
   - Check-In / Check-Out buttons.
-  - Edit control for each entry (disabled until UC-004).
+  - Edit and Delete controls for each entry (UC-004).
   - Empty-state hint, and an error message with a Retry button when loading fails.
 
 | Page | Access |

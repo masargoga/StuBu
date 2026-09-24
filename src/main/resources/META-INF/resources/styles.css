@@ -428,3 +428,41 @@ vaadin-button.time-action vaadin-icon {
 .time-load-error > span {
   flex: 1 1 12rem;
 }
+
+/* UC-004: correcting and deleting entries */
+.timeline-actions {
+  display: inline-flex;
+  gap: var(--vaadin-gap-xs);
+}
+
+.timeline-locked {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--vaadin-gap-xs);
+  margin-top: var(--vaadin-gap-xs);
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-l);
+  line-height: var(--aura-line-height-l);
+}
+
+.timeline-locked vaadin-icon {
+  flex: none;
+  margin-top: 0.15em;
+}
+
+/* Edit and Delete are regular-size buttons with readable text (accessibility requirement). */
+.timeline-actions vaadin-button {
+  font-size: var(--aura-font-size-l);
+}
+
+/* Dialog fields and buttons are sized for readability (labels, values and footer buttons). */
+.time-dialog-content {
+  --vaadin-input-field-value-font-size: var(--aura-font-size-xl);
+  --vaadin-input-field-value-line-height: var(--aura-line-height-xl);
+  --vaadin-input-field-label-font-size: var(--aura-font-size-l);
+}
+
+.time-dialog-button {
+  min-height: 3rem;
+  font-size: var(--aura-font-size-xl);
+}

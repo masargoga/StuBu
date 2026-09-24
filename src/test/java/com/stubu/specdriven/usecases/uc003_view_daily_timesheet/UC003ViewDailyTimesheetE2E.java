@@ -7,7 +7,6 @@ import static org.mockito.ArgumentMatchers.any;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.assertions.LocatorAssertions;
-import com.microsoft.playwright.options.AriaRole;
 import com.stubu.specdriven.testsupport.E2ETest;
 import com.stubu.specdriven.timetracking.TimeEntryRepository;
 import java.time.Duration;
@@ -61,7 +60,7 @@ class UC003ViewDailyTimesheetE2E extends E2ETest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("viewports")
-    void anOpenEntry_showsStatusElapsedTimeAndTheDisabledEditControlAtEveryScreenSize(Viewport viewport) {
+    void anOpenEntry_showsStatusElapsedTimeAndTheEditControlsAtEveryScreenSize(Viewport viewport) {
         open(viewport);
         signInAsAlice();
         page.getByTestId("check-in").click();
@@ -77,7 +76,7 @@ class UC003ViewDailyTimesheetE2E extends E2ETest {
         assertThat(page.locator(".time-empty")).isHidden();
         assertThat(page.getByTestId("entry-status")).hasText("In Progress");
         Locator edit = page.getByTestId("edit-entry");
-        assertThat(edit).isDisabled();
+        assertThat(edit).isEnabled();
         assertThat(edit).hasText("Edit");
         assertNoHorizontalOverflow();
         double[] row = box(".timeline-row");
@@ -86,19 +85,6 @@ class UC003ViewDailyTimesheetE2E extends E2ETest {
         assertReadable(".time-total-detail");
         assertReadable(".timeline-label");
         screenshot("open-entry-" + viewport.name());
-    }
-
-    @Test
-    void theEditControlExplainsWhyItIsDisabled() {
-        open(DESKTOP);
-        signInAsAlice();
-        page.getByTestId("check-in").click();
-        assertThat(page.locator(".timeline-row")).hasCount(1);
-
-        page.locator(".timeline-edit").hover();
-
-        assertThat(page.getByRole(AriaRole.TOOLTIP)).containsText("Editing time entries is not available yet.");
-        screenshot("edit-tooltip");
     }
 
     @Test

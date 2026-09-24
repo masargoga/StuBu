@@ -59,7 +59,7 @@ Monthly timesheet container with approval workflow.
 | rejectedAt | LocalDateTime | Nullable | When rejected |
 | createdAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
 | updatedAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
-| Unique constraint | (employeeId, year, month) | | One timesheet per employee per month |
+| Unique constraint | (employeeId, year, month) | | One timesheet per employee per month. Columns are named `period_year` / `period_month` (YEAR and MONTH are reserved words in H2). Until UC-005 creates records, a month without a Timesheet counts as DRAFT; only `status` and the audit timestamps exist so far, the other fields arrive with UC-006 and UC-007 |
 
 ### PublicHoliday
 Calendar configuration for holidays.
