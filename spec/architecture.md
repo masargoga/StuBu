@@ -45,6 +45,10 @@ com.stubu.specdriven/
 - Public routes and endpoints: `@AnonymousAllowed`
 - Admin Flow routes: `@RolesAllowed("ADMIN")`
 - Login: custom Vaadin login view at `/login` with one "Sign in with …" button per configured OIDC provider (Microsoft Entra ID, Google). Spring Security `oauth2Login` handles the OIDC flow; no username/password form.
+- **IAM abstraction:** providers are configured under `stubu.iam.providers.<id>.*` (`google`, `microsoft` presets; any other id is a generic OIDC provider with explicit endpoints). Only providers with a client id appear on the login page. Credentials come from the environment, never from the repository. Redirect URI to register: `{base-url}/login/oauth2/code/{id}`.
+- **Identity resolution:** the OIDC ID token supplies only the email (provider-agnostic `IamEmailExtractor`); the employee, and thus the roles, come from the application database. MANAGER and ADMIN employees are also granted the EMPLOYEE role. An employee is never created from a login.
+- **Deny by default:** `VaadinSecurityConfigurer` denies every non-Vaadin request that is not explicitly opened, so new HTTP endpoints must declare their own access rules.
+- **UI texts:** all user-facing strings live in `src/main/resources/vaadin-i18n/translations*.properties` (English default, German) and are applied in `LocaleChangeObserver.localeChange`, because a component's locale is only known once it is attached.
 
 ---
 
@@ -53,7 +57,7 @@ com.stubu.specdriven/
 | Environment | Database | Selected by |
 |-------------|----------|-------------|
 | Production | PostgreSQL | default configuration (no profile) |
-| Automated tests | H2, in-memory | test configuration (`src/test/resources`) |
+| Automated tests | H2, in-memory | Spring profile `test` (`src/test/resources/application-test.properties`, activated with `@ActiveProfiles("test")`) |
 | Local development | H2, in-memory | Spring profile `dev` (`./mvnw -Dspring-boot.run.profiles=dev`) |
 
 - **Schema management:** Flyway, versioned migrations in `src/main/resources/db/migration` (`V1__…sql`, `V2__…sql`). Migrations are additive and must run unchanged on both H2 and PostgreSQL, so use portable SQL only — no vendor-specific types or functions.
@@ -62,4 +66,4 @@ com.stubu.specdriven/
 - **PostgreSQL configuration:** connection settings come from the environment (`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`). No credentials in the repository.
 - **Tests:** use H2 only. Do not require a running PostgreSQL instance or Docker to run `./mvnw test`.
 - **Dependencies** (managed by the Spring Boot BOM, Spring Boot 4 starter names): `spring-boot-starter-data-jpa`, `spring-boot-starter-flyway`, `flyway-database-postgresql`, `org.postgresql:postgresql` (runtime), `com.h2database:h2` (runtime, used by the `dev` profile and tests), plus `spring-boot-starter-security`, `spring-boot-starter-security-oauth2-client` and `spring-boot-starter-security-test` (test).
-- **Config files:** `application.properties` (production/PostgreSQL), `application-dev.properties` (H2), and `src/test/resources/application.properties` (H2; shadows the main file on the test classpath, so shared settings are repeated there).
+- **Config files:** `application.properties` (production/PostgreSQL), `application-dev.properties` (H2 plus sample employees from `db/dev`), and `src/test/resources/application-test.properties` (H2). Tests must not rely on the main file being shadowed.

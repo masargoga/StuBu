@@ -7,7 +7,7 @@
 
 **Goal:** As a user, I want to log in using my enterprise IAM provider so that I can securely access the time tracking application.
 
-**Status:** Pending
+**Status:** Implemented
 **Date:** 2024-01-15
 
 > A use case cannot be marked as **Implemented** unless all criteria in the use case implementation workflow are fulfilled.
@@ -123,12 +123,12 @@ User navigates to the application URL and is redirected to the login page.
 
 > Tests verify the flows and business rules above. There is no separate acceptance-criteria list — the flows and rules *are* the acceptance criteria. The use case's test class, folder, and naming conventions are defined by the `/use-case-tests` skill — do not name a test class here.
 
-- [ ] Main Flow covered (steps 1–11)
-- [ ] AF-1 (Employee Not Found) covered
-- [ ] AF-2 (Employee Inactive) covered
-- [ ] AF-3 (IAM Provider Error) covered
-- [ ] AF-4 (Token Exchange Failure) covered
-- [ ] BR-01, BR-02, BR-03, BR-04, BR-05 covered
+- [x] Main Flow covered (steps 1–11)
+- [x] AF-1 (Employee Not Found) covered
+- [x] AF-2 (Employee Inactive) covered
+- [x] AF-3 (IAM Provider Error) covered
+- [x] AF-4 (Token Exchange Failure) covered
+- [x] BR-01, BR-02, BR-03, BR-04, BR-05 covered
 
 ---
 

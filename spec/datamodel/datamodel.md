@@ -10,15 +10,15 @@ Core user identity and organizational context.
 | Field | Type | Constraints | Notes |
 |-------|------|-------------|-------|
 | id | Long (PK) | Auto-generated | |
-| email | String | Unique, Not null | Used to match authenticated IAM email |
+| email | String | Unique, Not null | Used to match authenticated IAM email. Stored trimmed and lower-case; matching is case-insensitive |
 | firstName | String | Not null | |
 | lastName | String | Not null | |
-| role | Enum | EMPLOYEE, MANAGER, ADMIN | Determines access rights |
+| role | Enum | EMPLOYEE, MANAGER, ADMIN | Determines access rights. MANAGER and ADMIN also hold the EMPLOYEE role at login (they record their own time) |
 | managerId | Long (FK) | Nullable | References another Employee if this employee has a manager |
 | departmentId | Long (FK) | Not null | References Department |
 | isActive | Boolean | Not null, default true | Soft delete for historical tracking |
-| createdAt | LocalDateTime | Not null | Audit timestamp |
-| updatedAt | LocalDateTime | Not null | Audit timestamp |
+| createdAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
+| updatedAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
 
 ### Department
 Organizational unit for grouping employees.
@@ -27,7 +27,7 @@ Organizational unit for grouping employees.
 |-------|------|-------------|-------|
 | id | Long (PK) | Auto-generated | |
 | name | String | Unique, Not null | Department name |
-| createdAt | LocalDateTime | Not null | Audit timestamp |
+| createdAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
 
 ### TimeEntry
 Individual work period (check-in to check-out).
@@ -40,8 +40,8 @@ Individual work period (check-in to check-out).
 | checkInTime | LocalTime | Not null | Check-in time |
 | checkOutTime | LocalTime | Nullable | Check-out time (null while active) |
 | isActive | Boolean | Not null, default false | True if currently clocked in |
-| createdAt | LocalDateTime | Not null | Audit timestamp |
-| updatedAt | LocalDateTime | Not null | Audit timestamp |
+| createdAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
+| updatedAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
 
 ### Timesheet
 Monthly timesheet container with approval workflow.
@@ -57,8 +57,8 @@ Monthly timesheet container with approval workflow.
 | approvedAt | LocalDateTime | Nullable | When approved |
 | rejectionReason | String | Nullable | Reason if rejected |
 | rejectedAt | LocalDateTime | Nullable | When rejected |
-| createdAt | LocalDateTime | Not null | Audit timestamp |
-| updatedAt | LocalDateTime | Not null | Audit timestamp |
+| createdAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
+| updatedAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
 | Unique constraint | (employeeId, year, month) | | One timesheet per employee per month |
 
 ### PublicHoliday
@@ -69,7 +69,7 @@ Calendar configuration for holidays.
 | id | Long (PK) | Auto-generated | |
 | date | LocalDate | Not null, Unique | Holiday date |
 | name | String | Not null | Holiday name |
-| createdAt | LocalDateTime | Not null | Audit timestamp |
+| createdAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
 
 ### AuditLog
 Immutable audit trail for compliance and troubleshooting.
@@ -77,14 +77,14 @@ Immutable audit trail for compliance and troubleshooting.
 | Field | Type | Constraints | Notes |
 |-------|------|-------------|-------|
 | id | Long (PK) | Auto-generated | |
-| timestamp | LocalDateTime | Not null | When the action occurred |
+| timestamp | Instant (UTC) | Not null | When the action occurred (server clock; column `occurred_at`) |
 | userId | Long (FK) | Nullable | Employee who performed the action (null for system) |
 | entityType | String | Not null | Type of entity affected (e.g., "TimeEntry", "Timesheet") |
-| entityId | Long | Not null | ID of the affected entity |
-| action | Enum | CREATE, UPDATE, DELETE, APPROVE, REJECT, SUBMIT | Action performed |
+| entityId | Long | Nullable | ID of the affected entity (null when none is known, e.g. a login by an unregistered email) |
+| action | Enum | CREATE, UPDATE, DELETE, APPROVE, REJECT, SUBMIT, LOGIN_SUCCESS, LOGIN_FAILURE | Action performed |
 | oldValues | String (JSON) | Nullable | Previous values (for auditing changes) |
 | newValues | String (JSON) | Nullable | New values (for auditing changes) |
-| reason | String | Nullable | Human-readable reason (e.g., rejection reason) |
+| reason | String | Nullable | Human-readable reason (e.g., rejection reason; for LOGIN_FAILURE the failure kind and attempted email) |
 
 ## Relationships
 

@@ -1,0 +1,39 @@
+package com.stubu.specdriven.security;
+
+import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.web.SecurityFilterChain;
+
+/**
+ * Authentication is delegated to OIDC identity providers; there is no username/password login.
+ * Authorization is enforced server-side through the roles on the views ({@code @RolesAllowed}, ...).
+ */
+@Configuration
+@EnableWebSecurity
+@EnableConfigurationProperties(IamProperties.class)
+class SecurityConfiguration {
+
+    static final String LOGIN_PATH = "/login";
+
+    @Bean
+    SecurityFilterChain securityFilterChain(HttpSecurity http, EmployeeOidcUserService oidcUserService,
+            LoginSuccessHandler successHandler, LoginFailureHandler failureHandler) throws Exception {
+        http.oauth2Login(oauth2 -> oauth2
+                .loginPage(LOGIN_PATH)
+                .userInfoEndpoint(userInfo -> userInfo.oidcUserService(oidcUserService))
+                .successHandler(successHandler)
+                .failureHandler(failureHandler));
+        http.with(VaadinSecurityConfigurer.vaadin(), vaadin -> vaadin.loginView(LoginView.class, LOGIN_PATH));
+        return http.build();
+    }
+
+    @Bean
+    ClientRegistrationRepository clientRegistrationRepository(IamProperties properties) {
+        return new IamClientRegistrations(properties);
+    }
+}

@@ -1,1 +1,149 @@
-/* Add your styles here */
+/* Login view */
+.login-view {
+  box-sizing: border-box;
+  padding: var(--vaadin-padding-l);
+}
+
+.login-card {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 32rem;
+  flex: 0 1 auto;
+  padding: var(--vaadin-padding-xl);
+  border: 1px solid var(--vaadin-border-color-secondary);
+  border-radius: var(--vaadin-radius-l);
+  box-shadow: var(--aura-shadow-s);
+  gap: var(--vaadin-gap-m);
+}
+
+.login-card h1 {
+  margin: 0;
+  font-size: calc(var(--aura-font-size-xl) * 1.6);
+  line-height: 1.2;
+  font-weight: var(--aura-font-weight-semibold);
+}
+
+.login-card p {
+  margin: 0;
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-l);
+  line-height: var(--aura-line-height-l);
+}
+
+.login-providers {
+  gap: var(--vaadin-gap-m);
+}
+
+/* Large, clearly identifiable sign-in buttons (accessibility requirement: large controls). */
+.login-provider-button {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 4rem;
+  padding: var(--vaadin-padding-m) var(--vaadin-padding-l);
+  border: 1px solid var(--vaadin-border-color);
+  border-radius: var(--vaadin-radius-m);
+  background: var(--vaadin-background-container);
+  color: var(--vaadin-text-color);
+  font-size: var(--aura-font-size-xl);
+  font-weight: var(--aura-font-weight-medium);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.login-provider-button:hover {
+  background: var(--vaadin-background-container-strong);
+}
+
+.login-provider-button:focus-visible {
+  outline: 3px solid var(--aura-accent-color);
+  outline-offset: 2px;
+}
+
+/* Error message: icon and text, so state is not communicated by colour alone. */
+.login-message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--vaadin-gap-s);
+  padding: var(--vaadin-padding-m);
+  border: 1px solid var(--aura-red);
+  border-radius: var(--vaadin-radius-m);
+  background: color-mix(in srgb, var(--aura-red) 10%, var(--aura-background-color));
+  color: var(--aura-red-text);
+  font-size: var(--aura-font-size-l);
+  line-height: var(--aura-line-height-l);
+}
+
+.login-message vaadin-icon {
+  flex: none;
+  margin-top: 0.15em;
+}
+
+/* Application shell: header and page content share the same horizontal inset so they line up. */
+.app-navbar {
+  box-sizing: border-box;
+  flex-wrap: wrap;
+  gap: var(--vaadin-gap-xs) var(--vaadin-gap-m);
+  padding: var(--vaadin-padding-s) var(--vaadin-padding-l);
+}
+
+.app-title {
+  margin: 0;
+  font-size: var(--aura-font-size-xl);
+  font-weight: var(--aura-font-weight-semibold);
+  line-height: 1.2;
+}
+
+.app-user {
+  gap: var(--vaadin-gap-m);
+  font-size: var(--aura-font-size-l);
+}
+
+.app-user-name {
+  font-weight: var(--aura-font-weight-medium);
+}
+
+.app-user vaadin-button {
+  font-size: var(--aura-font-size-l);
+}
+
+/* Home view */
+.home-view {
+  box-sizing: border-box;
+  padding: var(--vaadin-padding-l);
+}
+
+.home-welcome {
+  margin: 0;
+  font-size: calc(var(--aura-font-size-xl) * 1.6);
+  line-height: 1.2;
+}
+
+.home-description {
+  margin: 0;
+  font-size: var(--aura-font-size-xl);
+}
+
+/* Mobile: give the content more room. */
+@media (max-width: 640px) {
+  .login-view {
+    padding: var(--vaadin-padding-m);
+  }
+
+  .login-card {
+    padding: var(--vaadin-padding-l);
+  }
+}
+
+/*
+ * Below 800px Aura removes the inset around the App Layout content area, so the page content would start
+ * left of the header title. Add the header's own inset (--vaadin-padding-s) to keep them aligned.
+ */
+@media (max-width: 799px) {
+  .home-view {
+    padding-inline: calc(var(--vaadin-padding-l) + var(--vaadin-padding-s));
+  }
+}
