@@ -104,10 +104,15 @@ class UC001AuthenticateWithIam extends SpringBrowserlessTest {
     private TestBrowser browser;
     private int auditEntriesBefore;
 
+    @Autowired
+    org.springframework.jdbc.core.JdbcTemplate jdbc;
+
     @BeforeEach
     void setUpScenario() {
         IDP.reset();
         browser = new TestBrowser(port);
+        // A work period another test class left open would show a second badge on the home page.
+        jdbc.update("delete from time_entry");
         auditEntriesBefore = auditLog.findAllByOrderByIdAsc().size();
     }
 

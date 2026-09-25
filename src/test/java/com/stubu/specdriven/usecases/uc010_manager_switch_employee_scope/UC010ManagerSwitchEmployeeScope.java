@@ -103,9 +103,8 @@ class UC010ManagerSwitchEmployeeScope extends SpringBrowserlessTest {
         person("gina.new@example.com", "Gina", "New", Role.EMPLOYEE, engineering, carol);
         long erin = person("erin.manager@example.com", "Erin", "Manager", Role.MANAGER, sales, carol);
         person("frank.sales@example.com", "Frank", "Sales", Role.EMPLOYEE, sales, erin);
-        // Everybody else who other tests left in Bob's department reports to Carol, so the counts are known.
-        jdbc.update("update employee set manager_id = ? where department_id = ? and manager_id = ? and id <> ?",
-                carol, engineering.getId(), bob, alice);
+        // Everybody else who other tests left reporting to Bob, in whatever department, reports to Carol, so the counts are known.
+        jdbc.update("update employee set manager_id = ? where manager_id = ? and id <> ?", carol, bob, alice);
         jdbc.update("update employee set department_id = ? where department_id = ? and email not in (?, ?, ?, ?, ?)",
                 sales.getId(), engineering.getId(), "carol.admin@example.com", "bob.manager@example.com",
                 "alice.employee@example.com", "dora.colleague@example.com", "gina.new@example.com");

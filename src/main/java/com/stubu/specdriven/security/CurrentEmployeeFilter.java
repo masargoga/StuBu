@@ -26,7 +26,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * request continues unauthenticated, which sends the browser to the login page.
  *
  * <p>The record is read at most once per {@code recheckInterval} and employee, so the many small requests of a
- * Vaadin page do not each hit the database.
+ * Vaadin page do not each hit the database. Only a positive answer is taken from that memory: before a session is ended the
+ * record is read again, so somebody who has just signed in with a changed role is never sent away because of an answer
+ * that is a few seconds old.
  */
 class CurrentEmployeeFilter extends OncePerRequestFilter {
 
@@ -71,10 +73,16 @@ class CurrentEmployeeFilter extends OncePerRequestFilter {
         Long id = principal.getEmployeeId();
         long now = nanoTime.getAsLong();
         Checked last = checked.get(id);
-        if (last == null || now - last.atNanos() >= recheckNanos) {
-            last = new Checked(employees.findAccessById(id), now);
-            checked.put(id, last);
+        if (last != null && now - last.atNanos() < recheckNanos && matches(last.access(), principal)) {
+            return true;
         }
-        return last.access().map(access -> access.active() && access.role() == principal.getRole()).orElse(false);
+        // Not known yet, too old, or the remembered answer says no: ask the record itself.
+        last = new Checked(employees.findAccessById(id), now);
+        checked.put(id, last);
+        return matches(last.access(), principal);
+    }
+
+    private static boolean matches(Optional<EmployeeAccess> access, EmployeePrincipal principal) {
+        return access.map(record -> record.active() && record.role() == principal.getRole()).orElse(false);
     }
 }

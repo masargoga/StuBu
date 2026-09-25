@@ -120,6 +120,23 @@ class CurrentEmployeeFilterTest {
     }
 
     @Test
+    void aFreshLoginWithTheNewRoleIsNotSentAwayBecauseOfAnOldAnswer() throws Exception {
+        // The record says MANAGER, the session was built at login as EMPLOYEE: signed out, and that is remembered.
+        stored = Optional.of(new EmployeeAccess(true, Role.MANAGER));
+        assertTrue(!stillSignedIn());
+
+        // The employee signs in again a moment later (within the interval) and now has the role of the record.
+        Employee employee = new Employee("alice.employee@example.com", "Alice", "Employee", Role.MANAGER, 1L);
+        ReflectionTestUtils.setField(employee, "id", 7L);
+        OidcIdToken token = new OidcIdToken("token", Instant.now(), Instant.now().plusSeconds(60), Map.of("sub", "alice"));
+        EmployeePrincipal manager = new EmployeePrincipal(employee, token);
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(manager, "n/a", manager.getAuthorities()));
+
+        assertTrue(stillSignedIn(), "The new session is valid");
+    }
+
+    @Test
     void anonymousRequestsAreLeftAlone() throws Exception {
         SecurityContextHolder.clearContext();
 

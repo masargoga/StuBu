@@ -99,6 +99,8 @@ public abstract class E2ETest {
     void resetApplicationState() {
         clock.set(TestClockConfiguration.START);
         jdbc.update("delete from time_entry");
+        // Timesheets are created on demand; one left submitted or approved by another test class would lock the entries.
+        jdbc.update("delete from timesheet");
         employee(ALICE, "Alice", "Employee", Role.EMPLOYEE, true);
     }
 
@@ -178,6 +180,10 @@ public abstract class E2ETest {
                     .orElseGet(() -> departments.save(new Department("Engineering")));
             return new Employee(email, firstName, lastName, role, department.getId());
         });
+        // The test asks for this person as described, whatever an earlier test class made of them.
+        employee.setFirstName(firstName);
+        employee.setLastName(lastName);
+        employee.setRole(role);
         employee.setActive(active);
         return employees.save(employee);
     }
