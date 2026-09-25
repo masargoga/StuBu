@@ -78,6 +78,26 @@ with the pod disruption budget, and sign-in through a real provider.
 > The pod's user has a **number** (10001) in the Dockerfile and in `securityContext`: Kubernetes cannot verify that a
 > user given by name is not root and refuses to start such a container when `runAsNonRoot` is set.
 
+### A development namespace
+
+`deploy/kubernetes/dev/postgres.yaml` is a small PostgreSQL (one instance, 1 GiB volume, no backups) for a development
+or test namespace; never use it for production. Its user and password come from the same secret as the application's.
+A local setup (Docker Desktop's Kubernetes) in the namespace `stubu-dev`:
+
+```bash
+docker build -t stubu:dev .
+kubectl create namespace stubu-dev
+kubectl -n stubu-dev create secret generic stubu-secrets \n  --from-literal=SPRING_DATASOURCE_USERNAME=stubu --from-literal=SPRING_DATASOURCE_PASSWORD="$(openssl rand -hex 24)"
+kubectl -n stubu-dev apply -f deploy/kubernetes/dev/postgres.yaml
+# the manifests with the local database host, image and no HTTPS-only cookie (edit configmap.yaml instead of using sed if you prefer)
+sed -e 's#postgres.example.svc#postgres#' -e 's#SESSION_COOKIE_SECURE: "true"#SESSION_COOKIE_SECURE: "false"#' \n    -e '/STUBU_IAM_PROVIDERS_MICROSOFT/d' deploy/kubernetes/configmap.yaml | kubectl -n stubu-dev apply -f -
+sed -e 's#registry.example.com/stubu:latest#stubu:dev#' -e 's#replicas: 2#replicas: 1#' deploy/kubernetes/deployment.yaml \n    | kubectl -n stubu-dev apply -f -
+kubectl -n stubu-dev apply -f deploy/kubernetes/service.yaml
+kubectl -n stubu-dev port-forward svc/stubu 8080:80    # then open http://localhost:8080
+```
+
+Signing in needs an identity provider (see DEVELOPMENT.md) and a first administrator in the database.
+
 ### Several pods and sessions
 
 The application is stateless apart from the user's **session**, which holds the state of the open pages, the message
