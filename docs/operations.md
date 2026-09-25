@@ -85,18 +85,25 @@ or test namespace; never use it for production. Its user and password come from 
 A local setup (Docker Desktop's Kubernetes) in the namespace `stubu-dev`:
 
 ```bash
-docker build -t stubu:dev .
+TAG=dev-$(git rev-parse --short HEAD)-$(date +%H%M%S)   # a new tag for every build, see below
+docker build -t stubu:$TAG .
 kubectl create namespace stubu-dev
 kubectl -n stubu-dev create secret generic stubu-secrets \n  --from-literal=SPRING_DATASOURCE_USERNAME=stubu --from-literal=SPRING_DATASOURCE_PASSWORD="$(openssl rand -hex 24)"
 kubectl -n stubu-dev apply -f deploy/kubernetes/dev/postgres.yaml
 # the manifests with the local database host, image and no HTTPS-only cookie (edit configmap.yaml instead of using sed if you prefer)
 sed -e 's#postgres.example.svc#postgres#' -e 's#SESSION_COOKIE_SECURE: "true"#SESSION_COOKIE_SECURE: "false"#' \n    -e '/STUBU_IAM_PROVIDERS_MICROSOFT/d' deploy/kubernetes/configmap.yaml | kubectl -n stubu-dev apply -f -
-sed -e 's#registry.example.com/stubu:latest#stubu:dev#' -e 's#replicas: 2#replicas: 1#' deploy/kubernetes/deployment.yaml \n    | kubectl -n stubu-dev apply -f -
+sed -e "s#registry.example.com/stubu:latest#stubu:$TAG#" -e 's#replicas: 2#replicas: 1#' deploy/kubernetes/deployment.yaml \n    | kubectl -n stubu-dev apply -f -
 kubectl -n stubu-dev apply -f deploy/kubernetes/service.yaml
 kubectl -n stubu-dev port-forward svc/stubu 8080:80    # then open http://localhost:8080
 ```
 
 Signing in needs an identity provider (see DEVELOPMENT.md) and a first administrator in the database.
+
+**Deploy a new version with a new image tag** (`kubectl -n stubu-dev set image deployment/stubu stubu=stubu:$TAG`), never by
+rebuilding the same tag and restarting: the cluster node keeps the image it first resolved for a tag and starts the old
+version again (found when a redeploy silently ran the previous build). Check what runs with
+`kubectl -n stubu-dev get pod -o jsonpath='{.items[*].status.containerStatuses[0].imageID}'` and compare it with
+`docker inspect stubu:$TAG --format '{{.Id}}'`.
 
 ### Several pods and sessions
 

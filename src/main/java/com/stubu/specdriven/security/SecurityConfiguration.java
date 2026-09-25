@@ -30,7 +30,8 @@ class SecurityConfiguration {
             @Value("${stubu.security.recheck-interval:PT5S}") Duration recheckInterval) throws Exception {
         http.addFilterBefore(new CurrentEmployeeFilter(employees, recheckInterval), AuthorizationFilter.class);
         // The probes of Docker and Kubernetes cannot sign in; they only see "UP" or "DOWN".
-        http.authorizeHttpRequests(requests -> requests.requestMatchers("/actuator/health/**").permitAll());
+        // The icon mark is shown on the login page and as the tab icon, before anybody has signed in.
+        http.authorizeHttpRequests(requests -> requests.requestMatchers("/actuator/health/**", "/icons/**").permitAll());
         http.oauth2Login(oauth2 -> oauth2
                 .loginPage(LOGIN_PATH)
                 .userInfoEndpoint(userInfo -> userInfo.oidcUserService(oidcUserService))
