@@ -27,11 +27,11 @@ RUN --mount=type=cache,target=/root/.m2 \
 
 FROM eclipse-temurin:25-jre-alpine
 
-# Run as a normal user, not as root.
-RUN addgroup -S stubu && adduser -S stubu -G stubu
+# Run as a normal user, not as root. The id is a number because Kubernetes (runAsNonRoot) cannot verify a name.
+RUN addgroup -S -g 10001 stubu && adduser -S -u 10001 -G stubu stubu
 WORKDIR /app
-COPY --from=build --chown=stubu:stubu /app/target/*.jar app.jar
-USER stubu
+COPY --from=build --chown=10001:10001 /app/target/*.jar app.jar
+USER 10001:10001
 
 # The production profile (structured logs); everything else is configured with environment variables,
 # see DEVELOPMENT.md. The heap follows the memory limit of the container.

@@ -111,6 +111,10 @@ class KubernetesManifestsTest {
     @Test
     void theContainerRunsWithoutRootAndWithoutWritingToItsFileSystem() throws IOException {
         assertEquals(true, at(manifest("deployment.yaml"), "spec", "template", "spec", "securityContext", "runAsNonRoot"));
+        // Kubernetes cannot check a user name against runAsNonRoot: the user is a number, the same as in the Dockerfile.
+        int user = at(manifest("deployment.yaml"), "spec", "template", "spec", "securityContext", "runAsUser");
+        assertTrue(user > 0);
+        assertTrue(Files.readString(Path.of("Dockerfile")).contains("USER " + user), "The image runs as the same user");
         assertEquals(true, at(container(), "securityContext", "readOnlyRootFilesystem"));
         assertEquals(false, at(container(), "securityContext", "allowPrivilegeEscalation"));
     }

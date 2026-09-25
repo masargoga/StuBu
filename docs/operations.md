@@ -69,9 +69,14 @@ kubectl apply -f deploy/kubernetes/
 ```
 
 Adjust the image name, host name, database URL and provider ids first. The manifests were checked for syntax and for
-agreement with the application (`KubernetesManifestsTest`), and the container settings they use (read-only file system,
-dropped capabilities, memory limit, two replicas) were exercised with plain Docker. They have **not been applied to a
-Kubernetes cluster**; try them on a test cluster first.
+agreement with the application (`KubernetesManifestsTest`) and **applied to a single-node Docker Desktop cluster** with a
+PostgreSQL pod. There, both replicas became ready, a complete rolling restart under continuous requests (699 requests
+through the Service) produced no failed request, and a deleted pod was replaced and ready within about 16 seconds.
+Not tried: the ingress (no ingress controller was installed, so the sticky-session annotations are untested), node drains
+with the pod disruption budget, and sign-in through a real provider.
+
+> The pod's user has a **number** (10001) in the Dockerfile and in `securityContext`: Kubernetes cannot verify that a
+> user given by name is not root and refuses to start such a container when `runAsNonRoot` is set.
 
 ### Several pods and sessions
 
