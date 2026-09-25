@@ -11,6 +11,8 @@
 
 > **Revision:** The page is `/timesheet` ("My Timesheet"), reachable from a navigation drawer next to "Today"; `?month=YYYY-MM` selects the month. The month is chosen with previous/next buttons and a selector of the last 24 months, and only the current and earlier months are offered (BR-06; a future month in the URL falls back to the current one). The default display is a timeline: one row per calendar day with the work periods on one shared time scale (06:00 to 20:00, widened in whole hours to fit every period of the month; design refresh), the daily total and break, and weekends and public holidays marked with text as well as colour. Entries can be corrected or deleted from the month view while the timesheet is a DRAFT (the UC-004 dialogs). The table view of AF-4 is an alternative display selected with a Timeline/Table switch. Public holidays come from a minimal read-only `public_holiday` table (UC-012 will manage it). The timesheet gets its approval fields (approved by/at, rejected by/at, reason) so the status area can say who approved or why it was rejected. **Submit** is implemented by UC-006; **Edit & resubmit** is shown disabled with an explanatory note until UC-008 exists.
 
+> **Revision (design refresh):** The status of the month is a card; the totals of the month ("Total hours", "Break") are two compact tiles. The month timeline is a card with one row per day; today and the days with entries are highlighted softly, weekends are hatched, holidays are tinted.
+
 ---
 
 ## Actors

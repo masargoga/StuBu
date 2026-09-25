@@ -11,6 +11,8 @@
 
 > **Revision:** The view is the time tracking panel that UC-002 already provides on the home page; UC-003 completes it. The panel refreshes itself while it is open, so the current time, the elapsed time and the totals stay correct without a reload.
 
+> **Revision (design refresh):** The daily details are the tiles and the "Your day" card of the panel described in UC-002: total (completed plus the open period so far), break, first check-in, the timeline, and the note "4h 4m completed + 1h 30m on the open entry" while working. Each work period is a row with its text, a status badge and Edit and Delete.
+
 ---
 
 ## Actors

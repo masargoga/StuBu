@@ -11,6 +11,8 @@
 
 > **Revision:** Administrators get an "Employees" entry in the navigation (managers keep their own "Employees" page of UC-009 next to "Approvals", which administrators do not have, since they do not approve). `/admin/employees` lists all employees, active and inactive, sorted by name, with role, department, manager and status, a search by name or email address, and per employee "Edit", "Deactivate" (active employees only) and "Timesheets" (the read-only view of UC-009). Adding and editing use one form in a dialog; the email is required and unique (case-insensitive) when adding and read-only when editing (BR-07). Problems are shown at the fields they belong to, all at once, plus "Please fill in all required fields." when something required is missing. The manager drop-down offers active managers and administrators, an employee cannot be their own manager, and a manager chain cannot become circular. The administrator cannot deactivate themselves, and the last active administrator cannot lose the administrator role. Deactivating asks for confirmation and an optional reason, which is kept in the audit entry (UPDATE with the old and new values, reason "Deactivated: ..."); it is a soft delete, there is no reactivation and no deletion (the spec asks for neither). Editing without changes writes no audit entry. Departments are chosen from the existing ones: there is deliberately no page to manage departments (`spec.md` section 15). Audit values are JSON objects with the email, names, role, manager id, department id and active flag. Only active administrators may call the service, independent of the page.
 
+> **Revision (after the first release):** Two administrators cannot overwrite each other any more: the form remembers the version of the employee it was opened with, and a save based on an older version is refused (AF-7, BR-08). Deactivating an employee ends their session within the re-check interval (BR-09). The list is the one of UC-014 (searched, sorted and paged in the database, 25 per page). The row actions are the text buttons Edit, Details and Deactivate.
+
 ---
 
 ## Actors
@@ -148,6 +150,17 @@ Administrator navigates to the "Employee Management" view and clicks to create, 
 3. System returns to employee list.
 4. Use case ends.
 
+### AF-7: Somebody Else Changed the Employee
+
+**Branches from:** Main Flow, saving an edit
+**Condition:** The employee was changed by another administrator after this form was opened
+
+1. System refuses the save and stores nothing.
+2. The form closes and the list is reloaded with the current data.
+3. System displays: "{name} was changed by someone else in the meantime. Nothing was saved. Please check the current data and try again."
+4. The administrator can open the employee again and repeat the change.
+5. Use case ends.
+
 ---
 
 ## Postconditions
@@ -189,6 +202,8 @@ Administrator navigates to the "Employee Management" view and clicks to create, 
 | BR-05 | Deactivation sets isActive = false (soft delete); historical data is retained |
 | BR-06 | All changes are logged to AuditLog with admin context and old/new values |
 | BR-07 | Email is typically immutable (read-only) to preserve audit trail integrity |
+| BR-08 | An edit is only stored when the employee has not been changed since the form was opened (optimistic locking with a version); a concurrent change fails the same way |
+| BR-09 | A deactivated employee who is signed in is signed out within the re-check interval (UC-001 BR-06) |
 
 ---
 

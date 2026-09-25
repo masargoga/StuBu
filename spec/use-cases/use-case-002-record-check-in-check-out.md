@@ -11,6 +11,8 @@
 
 > **Revision:** AF-1 and AF-2 follow `spec.md` sections 9 and 10 (confirmation dialogs instead of plain errors). For that reason both buttons stay available at all times; the relevant one is emphasized instead of the other being disabled.
 
+> **Revision (design refresh):** The panel is a status card and a day card. The status card shows whether the employee is working (green dot, "Currently working since ..."), the date, the current time, the elapsed time and the two actions (the possible one is filled green, the other outlined). Below it three tiles show "Total hours today", "Break" and "First check-in" (the last only when there are entries), then the card "Your day" with the timeline. Each tile is one readable text ("Total hours today: 5h 34m").
+
 ---
 
 ## Actors

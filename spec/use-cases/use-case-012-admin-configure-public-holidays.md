@@ -11,6 +11,8 @@
 
 > **Revision:** Administrators get a "Public holidays" entry in the navigation (`/admin/holidays`). The list shows the holidays of one year, earliest first (the current year is chosen first; "All years" shows everything), with "Edit" and "Delete" for each. Adding and editing use one form with a date picker (following the language of the page) and the name; both date and name can be edited, and a date that belongs to another holiday is refused. Dates from the year 2000 to 2100 are accepted, past and future alike (BR-04); the date picker cannot report unreadable input, so an empty date is answered with "Please enter a valid date.". Deleting is permanent after a confirmation (the audit entry keeps the date and name). Editing without changes writes no audit entry. Every change is stored together with its audit entry (CREATE, UPDATE with old and new values, DELETE with the old values) in one transaction, and only active administrators may call the service. The unique date is also enforced by the database, so two administrators adding the same date at the same moment cannot both succeed. Holidays show up in the month views of employees and managers (UC-005, UC-009) and never change worked time (BR-06).
 
+> **Revision (after the first release):** Editing a holiday is protected against concurrent changes like UC-011 (AF-6, BR-07). The row actions are the text buttons Edit and Delete.
+
 ---
 
 ## Actors
@@ -134,6 +136,16 @@ Administrator navigates to the "Public Holidays" configuration view and clicks t
 3. System returns to public holidays list.
 4. Use case ends.
 
+### AF-6: Somebody Else Changed the Holiday
+
+**Branches from:** Main Flow, saving an edit
+**Condition:** The holiday was changed by another administrator after this form was opened
+
+1. System refuses the save and stores nothing.
+2. The form closes and the list is reloaded with the current data.
+3. System displays: "This holiday was changed by someone else in the meantime. Nothing was saved. Please check the current data and try again."
+4. Use case ends.
+
 ---
 
 ## Postconditions
@@ -171,6 +183,7 @@ Administrator navigates to the "Public Holidays" configuration view and clicks t
 | BR-04 | Dates can be in the past, present, or future (all allowed for archival and planning) |
 | BR-05 | All changes are logged to AuditLog with admin context and old/new values |
 | BR-06 | Public holidays are informational; they do not automatically exclude days from timesheet calculations |
+| BR-07 | An edit is only stored when the holiday has not been changed since the form was opened (optimistic locking with a version) |
 
 ---
 

@@ -12,6 +12,8 @@
 
 > A use case cannot be marked as **Implemented** unless all criteria in the use case implementation workflow are fulfilled.
 
+> **Revision:** The login page is a card with the icon mark and one button per configured provider ("Sign in with Google", "Sign in with Microsoft", with the provider's logo); a provider without a client id is not offered. After login the session follows the employee record: when the employee is deactivated, deleted or given another role, the session ends within a few seconds (`stubu.security.recheck-interval`, default 5 seconds) and the user is sent to the login page (AF-5, BR-06). The login page, its stylesheet and the icon mark can be opened without signing in (`/login`, `/styles.css`, `/icons/**`). The `lang` attribute of the page is the language of the interface (English or German, following the browser). Health probes for Docker and Kubernetes (`/actuator/health/liveness`, `/actuator/health/readiness`) are the only other pages that need no login.
+
 ---
 
 ## Actors
@@ -90,6 +92,16 @@ User navigates to the application URL and is redirected to the login page.
 2. System redirects to login page.
 3. Use case ends.
 
+### AF-5: Employee Deactivated or Role Changed While Signed In
+
+**Branches from:** any request made after the login has completed
+**Condition:** An administrator deactivates the employee, removes the employee, or changes the employee's role while they are signed in
+
+1. At the latest after the re-check interval (default 5 seconds) the system finds that the employee is no longer active or has another role.
+2. System ends the session.
+3. The user's next request is redirected to the login page; after signing in again they have the rights of their current role (or are refused if inactive, see AF-2).
+4. Use case ends.
+
 ---
 
 ## Postconditions
@@ -116,6 +128,7 @@ User navigates to the application URL and is redirected to the login page.
 | BR-03 | Only active employees (isActive = true) are granted access |
 | BR-04 | Session tokens must be securely stored and validated on each request |
 | BR-05 | Failed authentication attempts should be logged for security audit |
+| BR-06 | A session follows the employee record: an inactive or removed employee, or one with a changed role, is signed out within the re-check interval, so rights never outlive the record |
 
 ---
 
