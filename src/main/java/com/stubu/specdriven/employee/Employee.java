@@ -1,22 +1,24 @@
 package com.stubu.specdriven.employee;
 
+import com.stubu.specdriven.base.TimestampListener;
+import com.stubu.specdriven.base.Timestamped;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.Instant;
 import java.util.Locale;
 
 @Entity
+@EntityListeners(TimestampListener.class)
 @Table(name = "employee")
-public class Employee {
+public class Employee implements Timestamped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -70,15 +72,15 @@ public class Employee {
         return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
     }
 
-    @PrePersist
-    void onCreate() {
-        createdAt = Instant.now();
-        updatedAt = createdAt;
+    @Override
+    public void stampCreated(Instant now) {
+        createdAt = now;
+        updatedAt = now;
     }
 
-    @PreUpdate
-    void onUpdate() {
-        updatedAt = Instant.now();
+    @Override
+    public void stampUpdated(Instant now) {
+        updatedAt = now;
     }
 
     public Instant getCreatedAt() {

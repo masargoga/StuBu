@@ -1,12 +1,13 @@
 package com.stubu.specdriven.timetracking;
 
+import com.stubu.specdriven.base.TimestampListener;
+import com.stubu.specdriven.base.Timestamped;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.Duration;
@@ -18,8 +19,9 @@ import java.time.Instant;
  * the database enforces that through the unique {@code openEmployeeId} column.
  */
 @Entity
+@EntityListeners(TimestampListener.class)
 @Table(name = "time_entry")
-public class TimeEntry {
+public class TimeEntry implements Timestamped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -70,15 +72,15 @@ public class TimeEntry {
         return new TimeEntry(employeeId, checkInAt, checkOutAt);
     }
 
-    @PrePersist
-    void onCreate() {
-        createdAt = Instant.now();
-        updatedAt = createdAt;
+    @Override
+    public void stampCreated(Instant now) {
+        createdAt = now;
+        updatedAt = now;
     }
 
-    @PreUpdate
-    void onUpdate() {
-        updatedAt = Instant.now();
+    @Override
+    public void stampUpdated(Instant now) {
+        updatedAt = now;
     }
 
     /** Ends this open period. */

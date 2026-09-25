@@ -1,11 +1,13 @@
 package com.stubu.specdriven.holiday;
 
+import com.stubu.specdriven.base.TimestampListener;
+import com.stubu.specdriven.base.Timestamped;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.Instant;
@@ -13,8 +15,9 @@ import java.time.LocalDate;
 
 /** A public holiday. Informational only: it never changes worked time. */
 @Entity
+@EntityListeners(TimestampListener.class)
 @Table(name = "public_holiday")
-public class PublicHoliday {
+public class PublicHoliday implements Timestamped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,9 +44,9 @@ public class PublicHoliday {
         this.name = name;
     }
 
-    @PrePersist
-    void onCreate() {
-        createdAt = Instant.now();
+    @Override
+    public void stampCreated(Instant now) {
+        createdAt = now;
     }
 
     public Long getVersion() {

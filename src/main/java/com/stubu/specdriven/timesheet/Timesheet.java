@@ -1,14 +1,15 @@
 package com.stubu.specdriven.timesheet;
 
+import com.stubu.specdriven.base.TimestampListener;
+import com.stubu.specdriven.base.Timestamped;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.Instant;
@@ -16,8 +17,9 @@ import java.time.YearMonth;
 
 /** The monthly timesheet of an employee. Its status decides what may still be changed. */
 @Entity
+@EntityListeners(TimestampListener.class)
 @Table(name = "timesheet")
-public class Timesheet {
+public class Timesheet implements Timestamped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -73,15 +75,15 @@ public class Timesheet {
         this.status = status;
     }
 
-    @PrePersist
-    void onCreate() {
-        createdAt = Instant.now();
-        updatedAt = createdAt;
+    @Override
+    public void stampCreated(Instant now) {
+        createdAt = now;
+        updatedAt = now;
     }
 
-    @PreUpdate
-    void onUpdate() {
-        updatedAt = Instant.now();
+    @Override
+    public void stampUpdated(Instant now) {
+        updatedAt = now;
     }
 
     public Long getId() {

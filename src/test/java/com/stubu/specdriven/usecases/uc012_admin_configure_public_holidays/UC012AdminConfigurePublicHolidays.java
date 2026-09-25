@@ -400,6 +400,15 @@ class UC012AdminConfigurePublicHolidays extends SpringBrowserlessTest {
     }
 
     @Test
+    void br08_creationTimesComeFromTheApplicationClock() {
+        PublicHoliday added = service.add(carol, LocalDate.of(2026, 12, 25), "Christmas");
+
+        java.sql.Timestamp created = jdbc.queryForObject("select created_at from public_holiday where id = ?",
+                java.sql.Timestamp.class, added.getId());
+        assertEquals(NOW, created.toInstant(), "Not the wall clock");
+    }
+
+    @Test
     void br04_pastAndFutureDatesAreAllowed() {
         service.add(carol, LocalDate.of(2020, 1, 1), "Past");
         service.add(carol, LocalDate.of(2026, 10, 5), "Today");
