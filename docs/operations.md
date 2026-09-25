@@ -32,8 +32,10 @@ over HTTPS.
 Flyway migrates the database when the application starts. With several pods starting at once Flyway takes a database
 lock, so one pod migrates and the others wait.
 
-> The Dockerfile has been written but could not be built in the environment where it was authored (no Docker there).
-> Build it once in your pipeline and start the container against a test database before the first production rollout.
+> Verified (Docker 29, PostgreSQL 18): the image builds, runs as a non-root user, migrates an empty database, reports
+> healthy, stops gracefully on `SIGTERM`, and runs with `--read-only --tmpfs /tmp --cap-drop ALL` and a 1 GiB memory limit
+> (about 350 MiB used). Two instances started at the same moment against an empty database migrated it once and both
+> came up. Sign-in with a real provider was not part of that check.
 
 ## Health checks
 
@@ -67,7 +69,9 @@ kubectl apply -f deploy/kubernetes/
 ```
 
 Adjust the image name, host name, database URL and provider ids first. The manifests were checked for syntax and for
-agreement with the application (`KubernetesManifestsTest`) but not applied to a cluster.
+agreement with the application (`KubernetesManifestsTest`), and the container settings they use (read-only file system,
+dropped capabilities, memory limit, two replicas) were exercised with plain Docker. They have **not been applied to a
+Kubernetes cluster**; try them on a test cluster first.
 
 ### Several pods and sessions
 
