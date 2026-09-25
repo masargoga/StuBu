@@ -1,5 +1,6 @@
 package com.stubu.specdriven.base;
 
+import com.stubu.specdriven.admin.AuditLogView;
 import com.stubu.specdriven.admin.EmployeeManagementView;
 import com.stubu.specdriven.admin.PublicHolidayView;
 import com.stubu.specdriven.approval.ApprovalsView;
@@ -45,6 +46,7 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
             VaadinIcon.USERS.create());
     private final SideNavItem holidays = new SideNavItem("", PublicHolidayView.class,
             VaadinIcon.CALENDAR_O.create());
+    private final SideNavItem audit = new SideNavItem("", AuditLogView.class, VaadinIcon.RECORDS.create());
     private final DrawerToggle drawerToggle = new DrawerToggle();
 
     public MainLayout(AuthenticationContext authenticationContext) {
@@ -84,12 +86,13 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
         employees.setTestId("nav-employees");
         manageEmployees.setTestId("nav-employees");
         holidays.setTestId("nav-holidays");
+        audit.setTestId("nav-audit");
         navigation.addItem(today, timesheet);
         if (role == Role.MANAGER) {
             navigation.addItem(approvals, employees);
         }
         if (role == Role.ADMIN) {
-            navigation.addItem(manageEmployees, holidays);
+            navigation.addItem(manageEmployees, holidays, audit);
         }
         navigation.addClassName("app-navigation");
         addToDrawer(new Scroller(navigation));
@@ -105,6 +108,7 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
         employees.setLabel(getTranslation("nav.employees"));
         manageEmployees.setLabel(getTranslation("nav.employees"));
         holidays.setLabel(getTranslation("nav.holidays"));
+        audit.setLabel(getTranslation("nav.audit"));
         navigation.getElement().setAttribute("aria-label", getTranslation("nav.label"));
         drawerToggle.setAriaLabel(getTranslation("nav.toggle"));
     }

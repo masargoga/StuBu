@@ -4,8 +4,12 @@
 
 **Goal:** As an administrator, I want to view and search audit logs so that I can monitor system changes and ensure compliance.
 
-**Status:** Pending
+**Status:** Implemented
 **Date:** 2024-01-15
+
+> A use case cannot be marked as **Implemented** unless all criteria in the use case implementation workflow are fulfilled.
+
+> **Revision:** Administrators get an "Audit log" entry in the navigation (`/admin/audit`). The list shows 25 entries per page, newest first, with time (in the browser's time zone), user, entity type and id, action, reason, a one-line summary of the changes and a "Details" button that opens the full entry: exact time, user name, email and id, entity, action, reason, and the old and new values with one line per field. The summary and the detail lines are made from the stored JSON values (an update shows `field: old → new`). Filters: from and to date (both days included, in the browser's time zone), user (a part of the name or email address; "System" finds automatic entries without a user), entity type (the types that occur in the log) and action; "Search" applies them, "Reset filters" clears them, and the current filter also applies to the export. Without any entry the page says "No audit logs found.", with a filter that matches nothing "No audit logs match your filters.". The optional export (AF-4) is implemented as a CSV download of the matching entries (at most 10,000 rows, UTF-8 with a byte order mark, cells that a spreadsheet could take for a formula are marked as text). The log is read-only by construction (BR-03): the repository has no update or delete operation (a test guards that, which is why it does not use Spring Data's specification executor), the entity has no setters, and the page has no editing controls. Reading the log is itself not audited.
 
 ---
 
@@ -129,12 +133,12 @@ Administrator navigates to the "Audit Logs" view.
 
 ## Tests
 
-- [ ] Main Flow covered (steps 1–9)
-- [ ] AF-1 (No Entries) covered
-- [ ] AF-2 (No Results) covered
-- [ ] AF-3 (Database Error) covered
-- [ ] AF-4 (Export) covered if applicable
-- [ ] BR-01–BR-06 covered
+- [x] Main Flow covered (steps 1–9)
+- [x] AF-1 (No Entries) covered
+- [x] AF-2 (No Results) covered
+- [x] AF-3 (Database Error) covered
+- [x] AF-4 (Export) covered if applicable
+- [x] BR-01–BR-06 covered
 
 ---
 

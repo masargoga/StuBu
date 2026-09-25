@@ -904,3 +904,118 @@ vaadin-grid::part(holiday-cell) {
     flex: 1 1 8rem;
   }
 }
+
+/* UC-013: audit log */
+.audit-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--vaadin-gap-m);
+}
+
+.audit-view vaadin-text-field,
+.audit-view vaadin-date-picker,
+.audit-view vaadin-select {
+  --vaadin-input-field-value-font-size: var(--aura-font-size-l);
+  --vaadin-input-field-label-font-size: var(--aura-font-size-l);
+}
+
+.audit-view vaadin-date-picker,
+.audit-view vaadin-select {
+  width: 12rem;
+}
+
+.audit-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--vaadin-gap-s);
+}
+
+.audit-buttons vaadin-button,
+.export-link {
+  min-height: 2.75rem;
+  font-size: var(--aura-font-size-l);
+}
+
+.export-link {
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--vaadin-padding-m);
+  color: var(--aura-accent-text-color);
+  font-weight: var(--aura-font-weight-medium);
+}
+
+.audit-summary {
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-l);
+}
+
+.audit-view .approval-head,
+.audit-view .approval-row {
+  grid-template-columns: 1.6fr 1.3fr 1.1fr 0.9fr 1.3fr 2.6fr 7rem;
+  font-size: var(--aura-font-size-m);
+}
+
+.audit-changes {
+  overflow-wrap: anywhere;
+}
+
+.audit-pager {
+  display: flex;
+  align-items: center;
+  gap: var(--vaadin-gap-m);
+  font-size: var(--aura-font-size-l);
+}
+
+.audit-detail-field {
+  margin-bottom: var(--vaadin-gap-m);
+}
+
+.audit-detail-label {
+  display: block;
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-m);
+}
+
+.audit-detail-value {
+  margin: 0;
+  font-family: inherit;
+  font-size: var(--aura-font-size-l);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1300px) {
+  .audit-view .approval-head {
+    display: none;
+  }
+
+  .audit-view .approval-row {
+    grid-template-columns: 1fr;
+    gap: var(--vaadin-gap-xs);
+    padding: var(--vaadin-padding-m);
+    font-size: var(--aura-font-size-l);
+  }
+
+  .audit-view .approval-cell[data-label]::before {
+    content: attr(data-label) ": ";
+    color: var(--vaadin-text-color-secondary);
+  }
+}
+
+.audit-view vaadin-text-field {
+  width: 17rem;
+}
+
+@media (max-width: 640px) {
+  .audit-view vaadin-date-picker,
+  .audit-view vaadin-select,
+  .audit-view vaadin-text-field {
+    width: 100%;
+  }
+
+  .audit-view .approval-cell[data-label]:empty {
+    display: none;
+  }
+}
