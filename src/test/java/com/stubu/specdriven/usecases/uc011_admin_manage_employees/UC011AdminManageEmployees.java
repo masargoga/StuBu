@@ -60,6 +60,8 @@ class UC011AdminManageEmployees extends SpringBrowserlessTest {
 
     @Autowired
     EmployeeAdminService admin;
+    @Autowired
+    com.stubu.specdriven.admin.EmployeeOverviewService overview;
     @MockitoSpyBean
     EmployeeRepository employees;
     @Autowired
@@ -377,7 +379,8 @@ class UC011AdminManageEmployees extends SpringBrowserlessTest {
         EmployeeInput input = new EmployeeInput(NEW_EMAIL, "Zoe", "Zimmer", Role.EMPLOYEE, null, sales.getId());
         for (long notAdmin : List.of(bob, alice)) {
             assertThrows(AdminOnlyException.class, () -> admin.create(notAdmin, input));
-            assertThrows(AdminOnlyException.class, () -> admin.list(notAdmin));
+            assertThrows(AdminOnlyException.class, () -> overview.search(notAdmin,
+                    com.stubu.specdriven.admin.EmployeeOverviewService.Query.ALL));
             assertThrows(AdminOnlyException.class, () -> admin.update(notAdmin, alice, input));
             assertThrows(AdminOnlyException.class, () -> admin.deactivate(notAdmin, alice, null));
         }
@@ -392,7 +395,7 @@ class UC011AdminManageEmployees extends SpringBrowserlessTest {
 
     @Test
     void br08_aSaveBasedOnAnOutdatedVersionIsRefusedInsteadOfOverwritingTheOtherChange() {
-        EmployeeRow opened = admin.list(carol).stream().filter(row -> row.id() == alice).findFirst().orElseThrow();
+        EmployeeRow opened = rowOf(alice);
         // Another administrator changes Alice after the form was opened.
         admin.update(carol, alice, new EmployeeInput(null, "Alicia", "Employee", Role.EMPLOYEE, bob, engineering.getId()));
         int audits = auditLog.findAllByOrderByIdAsc().size();
@@ -405,7 +408,7 @@ class UC011AdminManageEmployees extends SpringBrowserlessTest {
         assertEquals("Employee", stored.getLastName());
         assertEquals(audits, auditLog.findAllByOrderByIdAsc().size(), "A refused save is not audited");
 
-        EmployeeRow current = admin.list(carol).stream().filter(row -> row.id() == alice).findFirst().orElseThrow();
+        EmployeeRow current = rowOf(alice);
         admin.update(carol, alice, new EmployeeInput(null, "Alicia", "Employee-Smith", Role.EMPLOYEE, bob,
                 engineering.getId(), current.version()));
         assertEquals("Employee-Smith", employees.findById(alice).orElseThrow().getLastName(),
@@ -487,7 +490,8 @@ class UC011AdminManageEmployees extends SpringBrowserlessTest {
     }
 
     private EmployeeRow rowOf(long id) {
-        return admin.list(carol).stream().filter(row -> row.id() == id).findFirst().orElseThrow();
+        return overview.search(carol, com.stubu.specdriven.admin.EmployeeOverviewService.Query.ALL).stream()
+                .filter(row -> row.id() == id).findFirst().orElseThrow();
     }
 
     /** Fills the open form; a {@code null} manager leaves it empty. */

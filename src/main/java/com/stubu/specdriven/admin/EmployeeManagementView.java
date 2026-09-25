@@ -67,7 +67,9 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
     private boolean anyEmployees = true;
     private boolean ascending = true;
     private boolean updatingFilters;
-    private transient List<EmployeeRow> employees = List.of();
+    private int page;
+    private transient EmployeeOverviewService.Page result = new EmployeeOverviewService.Page(List.of(), 0, 0, 1,
+            true);
     private transient List<Choice> departments = List.of();
     private transient List<Choice> managers = List.of();
     private boolean loadFailed;
@@ -89,6 +91,10 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
     private final Span count = new Span();
     private final Div emptyHint = new Div();
     private final Div list = new Div();
+    private final Button previous = new Button(VaadinIcon.ANGLE_LEFT.create());
+    private final Button next = new Button(VaadinIcon.ANGLE_RIGHT.create());
+    private final Span pageInfo = new Span();
+    private final Div pager = new Div();
 
     public EmployeeManagementView(AuthenticationContext authenticationContext, EmployeeAdminService service,
             EmployeeOverviewService overview, TimeEntryService entryService) {
@@ -162,7 +168,17 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
         list.setTestId("employees");
         list.getElement().setAttribute("role", "table");
 
-        add(heading, add, messageBox, loadErrorBox, filters, count, emptyHint, list);
+        previous.setTestId("employees-previous");
+        previous.addThemeVariants(ButtonVariant.TERTIARY);
+        previous.addClickListener(event -> goTo(page - 1));
+        next.setTestId("employees-next");
+        next.addThemeVariants(ButtonVariant.TERTIARY);
+        next.addClickListener(event -> goTo(page + 1));
+        pageInfo.setTestId("employees-page");
+        pager.add(previous, pageInfo, next);
+        pager.addClassName("audit-pager");
+
+        add(heading, add, messageBox, loadErrorBox, filters, count, emptyHint, list, pager);
         load();
     }
 
@@ -184,8 +200,14 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
 
     private void filterChanged() {
         if (!updatingFilters) {
+            page = 0;
             refresh();
         }
+    }
+
+    private void goTo(int target) {
+        page = Math.max(target, 0);
+        refresh();
     }
 
     private Query query() {
@@ -203,9 +225,9 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
             return;
         }
         try {
-            Query query = query();
-            employees = overview.search(adminId, query);
-            anyEmployees = query.isFiltered() ? !overview.search(adminId, Query.ALL).isEmpty() : !employees.isEmpty();
+            result = overview.page(adminId, query(), page);
+            page = result.page(); // the list shrank: the last page
+            anyEmployees = result.anyEmployees();
             departments = service.departments(adminId);
             managers = service.managerCandidates(adminId);
             loadFailed = false;
@@ -265,8 +287,14 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
         add.setEnabled(!loadFailed);
         filters.setVisible(!loadFailed);
 
-        List<EmployeeRow> shown = employees;
-        count.setText(getTranslation("manage.count", shown.size()));
+        List<EmployeeRow> shown = result.rows();
+        count.setText(getTranslation("manage.count", result.total()));
+        pager.setVisible(!loadFailed && result.pages() > 1);
+        pageInfo.setText(getTranslation("audit.page", result.page() + 1, result.pages()));
+        previous.setEnabled(result.page() > 0);
+        next.setEnabled(result.page() + 1 < result.pages());
+        previous.getElement().setAttribute("aria-label", getTranslation("audit.previous"));
+        next.getElement().setAttribute("aria-label", getTranslation("audit.next"));
         count.setVisible(!loadFailed && !shown.isEmpty());
         emptyHint.setText(getTranslation(anyEmployees ? "manage.noMatch" : "manage.none"));
         emptyHint.setVisible(!loadFailed && shown.isEmpty());

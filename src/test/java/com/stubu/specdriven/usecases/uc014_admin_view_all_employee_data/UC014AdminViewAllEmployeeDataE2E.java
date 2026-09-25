@@ -122,6 +122,33 @@ class UC014AdminViewAllEmployeeDataE2E extends E2ETest {
         assertThat(page.getByTestId("employee-timesheets")).isVisible();
     }
 
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("viewports")
+    void aLongListIsShownPageByPage(Viewport viewport) {
+        for (int i = 1; i <= 30; i++) {
+            employee("bulk%02d@example.com".formatted(i), "Bulk%02d".formatted(i), "Zed", Role.EMPLOYEE, true);
+        }
+        try {
+            signInAndOpenList(viewport);
+            page.locator("[data-testid=employee-search] input").fill("bulk");
+            assertThat(page.getByTestId("employee-count")).hasText("30 employees");
+            assertThat(page.getByTestId("manage-row")).hasCount(25);
+            assertThat(page.getByTestId("employees-page")).hasText("Page 1 of 2");
+            assertThat(page.getByTestId("employees-previous")).isDisabled();
+            assertReadable(".audit-summary");
+            assertNoHorizontalOverflow();
+            page.getByTestId("employees-page").scrollIntoViewIfNeeded();
+            screenshot("pager-" + viewport.name());
+
+            page.getByTestId("employees-next").click();
+            assertThat(page.getByTestId("employees-page")).hasText("Page 2 of 2");
+            assertThat(page.getByTestId("manage-row")).hasCount(5);
+            assertThat(page.getByTestId("employees-next")).isDisabled();
+        } finally {
+            jdbc.update("delete from employee where email like 'bulk%@example.com'");
+        }
+    }
+
     /** The row of the employee with this name (other rows may mention the name as their manager). */
     private com.microsoft.playwright.Locator rowOf(String name) {
         return page.getByTestId("manage-row").filter(new com.microsoft.playwright.Locator.FilterOptions()

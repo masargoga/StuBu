@@ -14,9 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -53,22 +51,6 @@ public class EmployeeAdminService {
         this.auditLog = auditLog;
         this.adminAccess = adminAccess;
         this.transaction = new TransactionTemplate(transactionManager);
-    }
-
-    /** All employees, active and inactive, sorted by name. */
-    @Transactional(readOnly = true)
-    public List<EmployeeRow> list(long adminId) {
-        requireAdmin(adminId);
-        Map<Long, Employee> byId = employees.findAll().stream()
-                .collect(Collectors.toMap(Employee::getId, Function.identity()));
-        Map<Long, String> departmentNames = departments.findAll().stream()
-                .collect(Collectors.toMap(Department::getId, Department::getName));
-        Map<Long, Instant> logins = new HashMap<>();
-        auditLog.findLatestLogins().forEach(login -> logins.put((Long) login[0], (Instant) login[1]));
-        return byId.values().stream()
-                .sorted(Comparator.comparing(Employee::getLastName, String.CASE_INSENSITIVE_ORDER)
-                        .thenComparing(Employee::getFirstName, String.CASE_INSENSITIVE_ORDER))
-                .map(employee -> row(employee, departmentNames, byId, logins.get(employee.getId()))).toList();
     }
 
     /** The departments to choose from. */
@@ -280,9 +262,7 @@ public class EmployeeAdminService {
         if (employee.getManagerId() != null) {
             employees.findById(employee.getManagerId()).ifPresent(manager -> byId.put(manager.getId(), manager));
         }
-        Map<Long, Instant> logins = new HashMap<>();
-        auditLog.findLatestLogins().forEach(login -> logins.put((Long) login[0], (Instant) login[1]));
-        return row(employee, departmentNames, byId, logins.get(employee.getId()));
+        return row(employee, departmentNames, byId, auditLog.findLastLogin(employee.getId()));
     }
 
     private static EmployeeRow row(Employee employee, Map<Long, String> departmentNames, Map<Long, Employee> byId,

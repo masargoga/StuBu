@@ -9,6 +9,7 @@ import static org.mockito.ArgumentMatchers.any;
 import com.stubu.specdriven.admin.EmployeeDetailView;
 import com.stubu.specdriven.admin.EmployeeManagementView;
 import com.stubu.specdriven.admin.EmployeeOverviewService;
+import com.stubu.specdriven.admin.EmployeeSearch;
 import com.stubu.specdriven.admin.EmployeeOverviewService.Query;
 import com.stubu.specdriven.admin.EmployeeOverviewService.Sort;
 import com.stubu.specdriven.approval.EmployeeTimesheetView;
@@ -81,6 +82,8 @@ class UC014AdminViewAllEmployeeData extends SpringBrowserlessTest {
     @MockitoSpyBean
     EmployeeRepository employees;
     @MockitoSpyBean
+    EmployeeSearch employeeSearch;
+    @MockitoSpyBean
     TimesheetRepository timesheets;
     @Autowired
     TimesheetService timesheetService;
@@ -101,7 +104,7 @@ class UC014AdminViewAllEmployeeData extends SpringBrowserlessTest {
 
     @BeforeEach
     void setUpScenario() {
-        Mockito.reset(employees, timesheets);
+        Mockito.reset(employees, timesheets, employeeSearch);
         clock.set(NOW);
         jdbc.update("delete from timesheet");
         engineering = departments.findAll().stream().findFirst().orElseThrow();
@@ -129,7 +132,8 @@ class UC014AdminViewAllEmployeeData extends SpringBrowserlessTest {
 
     @AfterEach
     void resetMocks() {
-        Mockito.reset(employees, timesheets);
+        Mockito.reset(employees, timesheets, employeeSearch);
+        jdbc.update("delete from employee where email like 'bulk%@example.com' or email = 'under_score@example.com'");
     }
 
     // --- Main Flow: View All Employees ----------------------------------------------------------
@@ -223,6 +227,58 @@ class UC014AdminViewAllEmployeeData extends SpringBrowserlessTest {
         assertTrue(namesShown().containsAll(List.of("Alice Employee", "Dave Inactive", "Carol Admin")));
     }
 
+    @Test
+    void mainFlow_aLongListIsShownPageByPageInTheChosenOrder() {
+        for (int i = 1; i <= 30; i++) {
+            person("bulk%02d@example.com".formatted(i), "Bulk%02d".formatted(i), "Zed", Role.EMPLOYEE, engineering, null, true);
+        }
+        var first = overview.page(carol, Query.ALL, 0);
+        assertEquals(EmployeeOverviewService.PAGE_SIZE, first.rows().size());
+        assertTrue(first.pages() >= 2 && first.total() >= 35, first.toString());
+
+        EmployeeManagementView view = openList();
+        assertEquals(EmployeeOverviewService.PAGE_SIZE, rows().size());
+        assertTrue(text(view).contains("Page 1 of " + first.pages()), text(view));
+        assertFalse(button("employees-previous").isEnabled());
+        test(button("employees-next")).click();
+        assertTrue(text(view).contains("Page 2 of " + first.pages()), text(view));
+        assertTrue(button("employees-previous").isEnabled());
+        assertEquals(first.total() - EmployeeOverviewService.PAGE_SIZE, rows().size() + (first.pages() - 2)
+                * (long) EmployeeOverviewService.PAGE_SIZE, "The rest is on the following pages");
+
+        test(field("employee-search")).setValue("bulk");
+        assertTrue(text(view).contains("Page 1 of 2"), "A new search starts at the first page: " + text(view));
+        assertEquals(EmployeeOverviewService.PAGE_SIZE, rows().size());
+    }
+
+    @Test
+    void mainFlow_theOrderHoldsAcrossPagesAndAPageBeyondTheEndShowsTheLastPage() {
+        for (int i = 1; i <= 30; i++) {
+            person("bulk%02d@example.com".formatted(i), "Bulk%02d".formatted(i), "Zed", Role.EMPLOYEE, engineering, null, true);
+        }
+        Query bulk = new Query("bulk", null, null, null, Sort.EMAIL, false);
+        var page1 = overview.page(carol, bulk, 0);
+        var page2 = overview.page(carol, bulk, 1);
+        assertEquals(30, page1.total());
+        assertEquals(25, page1.rows().size());
+        assertEquals(5, page2.rows().size());
+        assertEquals("bulk30@example.com", page1.rows().get(0).email(), "Descending by email");
+        assertEquals("bulk05@example.com", page2.rows().get(0).email());
+        assertEquals(page2.rows(), overview.page(carol, bulk, 99).rows(), "Beyond the end: the last page");
+        assertEquals(page1.rows(), overview.page(carol, bulk, -3).rows(), "Before the start: the first page");
+    }
+
+    @Test
+    void mainFlow_percentAndUnderscoreInTheSearchAreOrdinaryCharacters() {
+        person("under_score@example.com", "Under", "Score", Role.EMPLOYEE, engineering, null, true);
+
+        assertEquals(1, overview.search(carol, new Query("under_score", null, null, null, Sort.NAME, true)).size());
+        assertEquals(0, overview.search(carol, new Query("under%score", null, null, null, Sort.NAME, true)).size());
+        assertEquals(0, overview.search(carol, new Query("%", null, null, null, Sort.NAME, true)).size(),
+                "A lone % does not match everything");
+        assertEquals(1, overview.search(carol, new Query("UNDER_SCORE", null, null, null, Sort.NAME, true)).size());
+    }
+
     // --- Main Flow: View Employee Details and Timesheets ---------------------------------------
 
     @Test
@@ -267,7 +323,7 @@ class UC014AdminViewAllEmployeeData extends SpringBrowserlessTest {
 
     @Test
     void af1_withoutEmployeesThePageSaysSo() {
-        Mockito.doReturn(List.of()).when(employees).findAll();
+        Mockito.doReturn(0L).when(employeeSearch).count(any(Query.class));
 
         EmployeeManagementView view = openList();
 
@@ -302,7 +358,8 @@ class UC014AdminViewAllEmployeeData extends SpringBrowserlessTest {
 
     @Test
     void af4_databaseErrorShowsAnErrorAndARetry() {
-        Mockito.doThrow(new DataAccessResourceFailureException("database is down")).when(employees).findAll();
+        Mockito.doThrow(new DataAccessResourceFailureException("database is down")).when(employeeSearch)
+                .count(any(Query.class));
 
         EmployeeManagementView view = openList();
 
@@ -310,7 +367,7 @@ class UC014AdminViewAllEmployeeData extends SpringBrowserlessTest {
         assertTrue(button("retry").isVisible());
         assertTrue(rows().isEmpty());
 
-        Mockito.reset(employees);
+        Mockito.reset(employeeSearch);
         test(button("retry")).click();
 
         assertFalse(text(view).contains("Unable to load data"), text(view));
