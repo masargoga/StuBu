@@ -219,21 +219,17 @@ class UC006SubmitTimesheet extends SpringBrowserlessTest {
     }
 
     @Test
-    void af1_approvedAndRejectedTimesheetsCannotBeSubmitted() {
+    void af1_anApprovedTimesheetCannotBeSubmitted() {
         timesheetService.getOrCreate(alice, SEPTEMBER);
-        for (TimesheetStatus status : List.of(TimesheetStatus.APPROVED, TimesheetStatus.REJECTED)) {
-            jdbc.update("update timesheet set status = ?", status.name());
+        jdbc.update("update timesheet set status = 'APPROVED'");
 
-            SubmissionRejectedException rejected = assertThrows(SubmissionRejectedException.class,
-                    () -> submissions.submit(alice, SEPTEMBER, UTC));
+        SubmissionRejectedException rejected = assertThrows(SubmissionRejectedException.class,
+                () -> submissions.submit(alice, SEPTEMBER, UTC));
 
-            assertEquals(SubmitBlocker.NOT_DRAFT, rejected.getBlocker());
-            assertEquals(status, statusInDatabase());
-        }
-        MonthlyTimesheetView view = openSheet("2026-09");
-        assertFalse(button("submit-timesheet").isEnabled(), "A rejected timesheet is resubmitted with UC-008");
-        assertEquals("Edit & resubmit", button("submit-timesheet").getText());
-        assertTrue(text(view).contains("not available yet"), text(view));
+        assertEquals(SubmitBlocker.NOT_DRAFT, rejected.getBlocker());
+        assertEquals(TimesheetStatus.APPROVED, statusInDatabase());
+        openSheet("2026-09");
+        assertTrue(buttons("submit-timesheet").stream().noneMatch(Component::isVisible));
     }
 
     @Test

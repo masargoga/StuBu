@@ -739,3 +739,9 @@ vaadin-grid::part(holiday-cell) {
   gap: var(--vaadin-gap-m);
   padding-bottom: var(--vaadin-padding-xs);
 }
+
+/* UC-008: a rejected timesheet shows the reason prominently. */
+.timesheet-status-rejected {
+  border-color: var(--aura-red);
+  border-width: 2px;
+}

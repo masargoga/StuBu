@@ -20,7 +20,7 @@ final class SubmissionRules {
      */
     static Optional<SubmitBlocker> blocker(YearMonth month, TimesheetStatus status, List<TimeEntry> entries,
             YearMonth currentMonth) {
-        if (status != TimesheetStatus.DRAFT) {
+        if (status != TimesheetStatus.DRAFT && status != TimesheetStatus.REJECTED) {
             return Optional.of(SubmitBlocker.NOT_DRAFT);
         }
         if (!month.isBefore(currentMonth)) {

@@ -46,8 +46,9 @@ public class EmailNotificationService implements NotificationService {
     @Override
     public void timesheetSubmitted(TimesheetSubmittedNotice notice) {
         String month = monthLabel(notice.period());
-        String subject = translations.getTranslation("mail.submitted.subject", locale, notice.employeeName(), month);
-        String text = translations.getTranslation("mail.submitted.body", locale, notice.recipientName(),
+        String key = notice.resubmission() ? "mail.resubmitted" : "mail.submitted";
+        String subject = translations.getTranslation(key + ".subject", locale, notice.employeeName(), month);
+        String text = translations.getTranslation(key + ".body", locale, notice.recipientName(),
                 notice.employeeName(), month, dateTime(notice.submittedAt()));
         send(notice.recipientEmail(), subject, text);
     }

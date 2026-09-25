@@ -125,10 +125,14 @@ public class Timesheet {
         return rejectionReason;
     }
 
-    /** Hands the timesheet in for approval; only a draft can be submitted. */
+    /**
+     * Hands the timesheet in for approval; a draft is submitted, a rejected timesheet resubmitted. The details of
+     * an earlier rejection stay on the record.
+     */
     public void submit(Instant at) {
-        if (status != TimesheetStatus.DRAFT) {
-            throw new IllegalStateException("Only a draft can be submitted, but the status is " + status);
+        if (status != TimesheetStatus.DRAFT && status != TimesheetStatus.REJECTED) {
+            throw new IllegalStateException("Only a draft or rejected timesheet can be submitted, but the status is "
+                    + status);
         }
         status = TimesheetStatus.SUBMITTED;
         submittedAt = at;

@@ -35,6 +35,7 @@ public class TimesheetSubmissionService {
 
     private static final Logger log = LoggerFactory.getLogger(TimesheetSubmissionService.class);
     private static final String ENTITY_TYPE = "Timesheet";
+    static final String RESUBMISSION_REASON = "Resubmission after rejection";
 
     private final TimesheetService timesheets;
     private final TimesheetRepository timesheetRepository;
@@ -59,8 +60,9 @@ public class TimesheetSubmissionService {
     }
 
     /**
-     * Submits the employee's timesheet for a month. It must be a draft, the month must be over in the given
-     * time zone, and it needs at least one work period, all of them completed.
+     * Submits the employee's timesheet for a month, or resubmits it after a rejection (UC-008). It must be a
+     * draft or rejected, the month must be over in the given time zone, and it needs at least one work period, all
+     * of them completed.
      *
      * @throws SubmissionRejectedException if the timesheet cannot be submitted; also when another session
      *                                     submitted it at the same moment
@@ -68,6 +70,7 @@ public class TimesheetSubmissionService {
     public void submit(long employeeId, YearMonth month, ZoneId zone) {
         Instant now = clock.instant();
         timesheets.getOrCreate(employeeId, month);
+        boolean[] resubmission = new boolean[1];
         try {
             transaction.executeWithoutResult(status -> {
                 Timesheet sheet = timesheetRepository.findByEmployeeIdAndYearAndMonth(employeeId, month.getYear(),
@@ -80,18 +83,21 @@ public class TimesheetSubmissionService {
                 if (blocker.isPresent()) {
                     throw new SubmissionRejectedException(blocker.get());
                 }
+                TimesheetStatus before = sheet.getStatus();
+                resubmission[0] = before == TimesheetStatus.REJECTED;
                 sheet.submit(now);
                 timesheetRepository.saveAndFlush(sheet);
                 auditService.record(employeeId, ENTITY_TYPE, sheet.getId(), AuditAction.SUBMIT,
-                        json(TimesheetStatus.DRAFT, month, null), json(TimesheetStatus.SUBMITTED, month, now), null);
+                        json(before, month, null), json(TimesheetStatus.SUBMITTED, month, now),
+                        resubmission[0] ? RESUBMISSION_REASON : null);
             });
         } catch (ObjectOptimisticLockingFailureException submittedMeanwhile) {
             throw new SubmissionRejectedException(SubmitBlocker.NOT_DRAFT);
         }
-        notifyManager(employeeId, month, now);
+        notifyManager(employeeId, month, now, resubmission[0]);
     }
 
-    private void notifyManager(long employeeId, YearMonth month, Instant submittedAt) {
+    private void notifyManager(long employeeId, YearMonth month, Instant submittedAt, boolean resubmission) {
         try {
             Employee employee = employees.findById(employeeId).orElseThrow();
             Optional<Employee> manager = Optional.ofNullable(employee.getManagerId()).flatMap(employees::findById);
@@ -101,7 +107,7 @@ public class TimesheetSubmissionService {
                 return;
             }
             notifications.timesheetSubmitted(new TimesheetSubmittedNotice(manager.get().getEmail(),
-                    manager.get().getFullName(), employee.getFullName(), month, submittedAt));
+                    manager.get().getFullName(), employee.getFullName(), month, submittedAt, resubmission));
         } catch (RuntimeException e) {
             log.error("The manager could not be notified about the timesheet {} of employee {}", month, employeeId,
                     e);

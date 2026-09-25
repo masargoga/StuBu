@@ -56,8 +56,8 @@ import org.springframework.dao.DataAccessException;
  * The employee's timesheet for a calendar month (UC-005): every day with its work periods, daily and monthly
  * totals, weekends and public holidays, and the status of the timesheet. The month is chosen with the arrows or
  * the month selector; only the current and earlier months can be shown. Work periods can be corrected while the
- * timesheet is a draft. A finished month can be submitted for approval (UC-006); resubmitting a rejected
- * timesheet is not available yet (UC-008).
+ * timesheet is a draft or was rejected. A finished month can be submitted for approval (UC-006), and a rejected
+ * timesheet resubmitted once it is corrected (UC-008).
  */
 @Route(value = MonthlyTimesheetView.ROUTE, layout = MainLayout.class)
 @PermitAll
@@ -294,68 +294,76 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
         refresh();
     }
 
-// --- submitting --------------------------------------------------------------------------------
+    // --- submitting --------------------------------------------------------------------------------
 
-private void submitClicked() {
-    if (sheet == null) {
-        return;
+    private void submitClicked() {
+        if (sheet == null) {
+            return;
+        }
+        SubmitBlocker blocker = sheet.submitBlocker();
+        if (blocker != null) {
+            message = new Message(blockedKey(blocker), true);
+            refresh();
+            return;
+        }
+        openSubmitDialog();
     }
-    SubmitBlocker blocker = sheet.submitBlocker();
-    if (blocker != null) {
-        message = new Message("timesheet.submit.blocked." + blocker.name(), true);
+
+    /** The message for a blocked submission; a rejected timesheet talks about resubmitting. */
+    private String blockedKey(SubmitBlocker blocker) {
+        boolean resubmit = sheet != null && sheet.status() == TimesheetStatus.REJECTED
+                && blocker != SubmitBlocker.NOT_DRAFT;
+        return (resubmit ? "timesheet.resubmit.blocked." : "timesheet.submit.blocked.") + blocker.name();
+    }
+
+    /** Asks for confirmation, because a submitted timesheet can no longer be changed by the employee. */
+    private void openSubmitDialog() {
+        String prefix = sheet.status() == TimesheetStatus.REJECTED ? "timesheet.resubmit" : "timesheet.submit";
+        Dialog dialog = new Dialog();
+        dialog.setWidth("min(34rem, 92vw)");
+        dialog.setHeaderTitle(getTranslation(prefix + ".title"));
+        Paragraph question = new Paragraph(getTranslation(prefix + ".confirm"));
+        question.addClassName("time-dialog-text");
+        Div error = new Div();
+        error.addClassName("time-dialog-error");
+        error.getElement().setAttribute("role", "alert");
+        error.setVisible(false);
+        VerticalLayout body = new VerticalLayout(question, error);
+        body.setPadding(false);
+        body.addClassName("time-dialog-content");
+        dialog.add(body);
+
+        Button cancel = new Button(getTranslation("time.cancel"), event -> dialog.close());
+        cancel.addThemeVariants(ButtonVariant.TERTIARY);
+        cancel.setTestId("submit-cancel");
+        cancel.addClassName("time-dialog-button");
+        Button confirm = new Button(getTranslation(prefix + ".action"));
+        confirm.addThemeVariants(ButtonVariant.PRIMARY);
+        confirm.setTestId("submit-confirm");
+        confirm.addClassName("time-dialog-button");
+        confirm.addClickListener(event -> submit(dialog, error, prefix));
+        dialog.getFooter().add(cancel, confirm);
+        dialog.addClosedListener(event -> dialog.removeFromParent());
+        dialog.open();
+    }
+
+    private void submit(Dialog dialog, Div error, String prefix) {
+        try {
+            submissionService.submit(employeeId, month, zone);
+            message = new Message(prefix + ".done", false);
+        } catch (SubmissionRejectedException rejected) {
+            message = new Message(blockedKey(rejected.getBlocker()), true);
+        } catch (DataAccessException e) {
+            log.error("Submitting the timesheet {} of employee {} failed", month, employeeId, e);
+            error.setText(getTranslation(prefix + ".failed"));
+            error.setVisible(true); // stays open: Submit again to retry
+            return;
+        }
+        dialog.close();
         refresh();
-        return;
     }
-    openSubmitDialog();
-}
 
-/** Asks for confirmation, because a submitted timesheet can no longer be changed by the employee. */
-private void openSubmitDialog() {
-    Dialog dialog = new Dialog();
-    dialog.setWidth("min(34rem, 92vw)");
-    dialog.setHeaderTitle(getTranslation("timesheet.submit.title"));
-    Paragraph question = new Paragraph(getTranslation("timesheet.submit.confirm"));
-    question.addClassName("time-dialog-text");
-    Div error = new Div();
-    error.addClassName("time-dialog-error");
-    error.getElement().setAttribute("role", "alert");
-    error.setVisible(false);
-    VerticalLayout body = new VerticalLayout(question, error);
-    body.setPadding(false);
-    body.addClassName("time-dialog-content");
-    dialog.add(body);
-
-    Button cancel = new Button(getTranslation("time.cancel"), event -> dialog.close());
-    cancel.addThemeVariants(ButtonVariant.TERTIARY);
-    cancel.setTestId("submit-cancel");
-    cancel.addClassName("time-dialog-button");
-    Button confirm = new Button(getTranslation("timesheet.submit.action"));
-    confirm.addThemeVariants(ButtonVariant.PRIMARY);
-    confirm.setTestId("submit-confirm");
-    confirm.addClassName("time-dialog-button");
-    confirm.addClickListener(event -> submit(dialog, error));
-    dialog.getFooter().add(cancel, confirm);
-    dialog.addClosedListener(event -> dialog.removeFromParent());
-    dialog.open();
-}
-
-private void submit(Dialog dialog, Div error) {
-    try {
-        submissionService.submit(employeeId, month, zone);
-        message = new Message("timesheet.submit.done", false);
-    } catch (SubmissionRejectedException rejected) {
-        message = new Message("timesheet.submit.blocked." + rejected.getBlocker().name(), true);
-    } catch (DataAccessException e) {
-        log.error("Submitting the timesheet {} of employee {} failed", month, employeeId, e);
-        error.setText(getTranslation("timesheet.submit.failed"));
-        error.setVisible(true); // stays open: Submit again to retry
-        return;
-    }
-    dialog.close();
-    refresh();
-}
-
-// --- rendering ---------------------------------------------------------------------------------
+    // --- rendering ---------------------------------------------------------------------------------
 
     @Override
     public void localeChange(LocaleChangeEvent event) {
@@ -432,7 +440,10 @@ private void submit(Dialog dialog, Div error) {
         statusText.setText(switch (status) {
             case DRAFT -> getTranslation("timesheet.status.DRAFT");
             case SUBMITTED -> sheet.submittedAt() == null ? getTranslation("timesheet.status.SUBMITTED.nodate")
-                    : getTranslation("timesheet.status.SUBMITTED", date(sheet.submittedAt(), locale));
+                    : sheet.rejectedAt() == null
+                            ? getTranslation("timesheet.status.SUBMITTED", date(sheet.submittedAt(), locale))
+                            : getTranslation("timesheet.status.SUBMITTED.resubmitted", date(sheet.submittedAt(), locale),
+                                    date(sheet.rejectedAt(), locale));
             case APPROVED -> sheet.approvedByName() == null
                     ? getTranslation("timesheet.status.APPROVED.noone", date(sheet.approvedAt(), locale))
                     : getTranslation("timesheet.status.APPROVED", date(sheet.approvedAt(), locale),
@@ -442,13 +453,14 @@ private void submit(Dialog dialog, Div error) {
                     : getTranslation("timesheet.status.REJECTED", date(sheet.rejectedAt(), locale),
                             sheet.rejectionReason());
         });
-        // A draft is submitted once its month is over (UC-006). Resubmitting a rejected timesheet is UC-008.
+        // A draft is submitted once its month is over (UC-006); a rejected timesheet is corrected and resubmitted (UC-008).
         boolean offersSubmit = status == TimesheetStatus.DRAFT || status == TimesheetStatus.REJECTED;
         boolean monthOver = sheet.submitBlocker() != SubmitBlocker.MONTH_NOT_ENDED;
         submit.setText(getTranslation(status == TimesheetStatus.REJECTED ? "timesheet.resubmit" : "timesheet.submit"));
         submit.setVisible(offersSubmit);
-        submit.setEnabled(status == TimesheetStatus.DRAFT && monthOver);
-        String note = status == TimesheetStatus.REJECTED ? getTranslation("timesheet.submit.unavailable")
+        submit.setEnabled(offersSubmit && monthOver);
+        statusBox.setClassName("timesheet-status-rejected", status == TimesheetStatus.REJECTED);
+        String note = status == TimesheetStatus.REJECTED ? getTranslation("timesheet.resubmit.hint")
                 : !monthOver ? getTranslation("timesheet.submit.notYet", date(month.plusMonths(1).atDay(1)
                         .atStartOfDay(zone).toInstant(), locale))
                         : "";

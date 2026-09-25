@@ -9,7 +9,8 @@ import java.time.YearMonth;
  * @param recipientEmail the manager's email address
  * @param recipientName  the manager's full name
  * @param employeeName   the full name of the employee who submitted
+ * @param resubmission   whether a rejected timesheet was corrected and submitted again
  */
 public record TimesheetSubmittedNotice(String recipientEmail, String recipientName, String employeeName,
-        YearMonth period, Instant submittedAt) {
+        YearMonth period, Instant submittedAt, boolean resubmission) {
 }

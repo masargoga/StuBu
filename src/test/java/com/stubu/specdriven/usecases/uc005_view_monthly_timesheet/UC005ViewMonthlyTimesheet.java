@@ -200,8 +200,8 @@ class UC005ViewMonthlyTimesheet extends SpringBrowserlessTest {
                 java.sql.Timestamp.from(Instant.parse("2026-09-21T09:00:00Z")), bob.getId(), "Please fix Monday");
         MonthlyTimesheetView rejected = openSheet(null);
         assertTrue(text(rejected).contains("Rejected on Sep 21, 2026 with reason: Please fix Monday"), text(rejected));
-        assertEquals("Edit & resubmit", button("submit-timesheet").getText());
-        assertFalse(button("submit-timesheet").isEnabled(), "Resubmitting is UC-008");
+        assertEquals("Resubmit timesheet", button("submit-timesheet").getText());
+        assertFalse(button("submit-timesheet").isEnabled(), "September is not over yet in this scenario");
     }
 
     @Test

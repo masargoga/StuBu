@@ -4,8 +4,12 @@
 
 **Goal:** As an employee, I want to correct the issues noted in a rejected timesheet and resubmit it for approval.
 
-**Status:** Pending
+**Status:** Implemented
 **Date:** 2024-01-15
+
+> A use case cannot be marked as **Implemented** unless all criteria in the use case implementation workflow are fulfilled.
+
+> **Revision:** Resubmitting is the submit button of the monthly timesheet (UC-006) in its "Resubmit timesheet" form and shares its rules and service: the confirmation dialog has its own wording, an empty month or a still-open check-in is reported when the button is pressed, a failed database write keeps the dialog open for a retry, and the audit entry is a SUBMIT with the old status REJECTED and the reason "Resubmission after rejection". The rejection reason is shown in a red-framed status area with the hint to correct the entries; the individual edit buttons of each entry serve as "Edit Entries" (there is no separate bulk editing). The rejection date, reason and reviewer stay on the timesheet record, and the status text after resubmitting reads "Submitted on [date] (resubmitted after the rejection on [date])". A resubmitted timesheet can be rejected again, which replaces the reason on the record; the earlier ones stay in the audit log. The manager is emailed with a resubmission text (`mail.resubmitted.*`).
 
 ---
 
@@ -133,12 +137,12 @@ Employee navigates to the Monthly Timesheet view and sees a rejected timesheet w
 
 ## Tests
 
-- [ ] Main Flow covered (steps 1–14)
-- [ ] AF-1 (Not Rejected) covered
-- [ ] AF-2 (No Entries) covered
-- [ ] AF-3 (Cancel Resubmission) covered
-- [ ] AF-4 (Database Error) covered
-- [ ] BR-01–BR-05 covered
+- [x] Main Flow covered (steps 1–14)
+- [x] AF-1 (Not Rejected) covered
+- [x] AF-2 (No Entries) covered
+- [x] AF-3 (Cancel Resubmission) covered
+- [x] AF-4 (Database Error) covered
+- [x] BR-01–BR-05 covered
 
 ---
 

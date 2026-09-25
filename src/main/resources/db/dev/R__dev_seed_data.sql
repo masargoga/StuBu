@@ -71,3 +71,18 @@ INSERT INTO timesheet (employee_id, period_year, period_month, status, submitted
 SELECT e.id, YEAR(DATEADD('MONTH', -1, CURRENT_DATE)), MONTH(DATEADD('MONTH', -1, CURRENT_DATE)), 'SUBMITTED',
        CURRENT_TIMESTAMP, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 FROM employee e WHERE e.email = 'erik.employee@example.com';
+
+-- Two months ago Alice worked three days and Bob rejected her timesheet, so it can be corrected and resubmitted.
+INSERT INTO time_entry (employee_id, check_in_at, check_out_at, open_employee_id, version, created_at, updated_at)
+SELECT e.id,
+       DATEADD('HOUR', 9, CAST(DATEADD('DAY', r.x, DATEADD('MONTH', -2, DATE_TRUNC('MONTH', CURRENT_DATE))) AS TIMESTAMP WITH TIME ZONE)),
+       DATEADD('HOUR', 18, CAST(DATEADD('DAY', r.x, DATEADD('MONTH', -2, DATE_TRUNC('MONTH', CURRENT_DATE))) AS TIMESTAMP WITH TIME ZONE)),
+       NULL, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM employee e, system_range(14, 16) AS r(x) WHERE e.email = 'alice.employee@example.com';
+
+INSERT INTO timesheet (employee_id, period_year, period_month, status, submitted_at, rejected_at, rejected_by,
+                       rejection_reason, version, created_at, updated_at)
+SELECT a.id, YEAR(DATEADD('MONTH', -2, CURRENT_DATE)), MONTH(DATEADD('MONTH', -2, CURRENT_DATE)), 'REJECTED',
+       CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, b.id, 'The hours on the second day look too long, please check them.',
+       0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM employee a, employee b WHERE a.email = 'alice.employee@example.com' AND b.email = 'bob.manager@example.com';

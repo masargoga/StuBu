@@ -208,7 +208,7 @@ class UC005ViewMonthlyTimesheetE2E extends E2ETest {
         page.locator(".day-row").first().waitFor();
         assertThat(page.getByTestId("status-text")).hasText("Rejected on Sep 21, 2026 with reason: Please fix Monday");
         assertThat(page.getByTestId("submit-timesheet")).isDisabled();
-        assertThat(page.getByTestId("submit-timesheet")).hasText("Edit & resubmit");
+        assertThat(page.getByTestId("submit-timesheet")).hasText("Resubmit timesheet");
         screenshot("status-rejected");
     }
 
