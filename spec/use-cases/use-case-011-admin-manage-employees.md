@@ -4,8 +4,12 @@
 
 **Goal:** As an administrator, I want to create, edit, and deactivate employee records so that the employee database remains current and accurate.
 
-**Status:** Pending
+**Status:** Implemented
 **Date:** 2024-01-15
+
+> A use case cannot be marked as **Implemented** unless all criteria in the use case implementation workflow are fulfilled.
+
+> **Revision:** Administrators get an "Employees" entry in the navigation (managers keep their own "Employees" page of UC-009 next to "Approvals", which administrators do not have, since they do not approve). `/admin/employees` lists all employees, active and inactive, sorted by name, with role, department, manager and status, a search by name or email address, and per employee "Edit", "Deactivate" (active employees only) and "Timesheets" (the read-only view of UC-009). Adding and editing use one form in a dialog; the email is required and unique (case-insensitive) when adding and read-only when editing (BR-07). Problems are shown at the fields they belong to, all at once, plus "Please fill in all required fields." when something required is missing. The manager drop-down offers active managers and administrators, an employee cannot be their own manager, and a manager chain cannot become circular. The administrator cannot deactivate themselves, and the last active administrator cannot lose the administrator role. Deactivating asks for confirmation and an optional reason, which is kept in the audit entry (UPDATE with the old and new values, reason "Deactivated: ..."); it is a soft delete, there is no reactivation and no deletion (the spec asks for neither). Editing without changes writes no audit entry. Departments are chosen from the existing ones: there is deliberately no page to manage departments (`spec.md` section 15). Audit values are JSON objects with the email, names, role, manager id, department id and active flag. Only active administrators may call the service, independent of the page.
 
 ---
 
@@ -190,16 +194,16 @@ Administrator navigates to the "Employee Management" view and clicks to create, 
 
 ## Tests
 
-- [ ] Main Flow Create covered (steps 1–9)
-- [ ] Main Flow Edit covered (steps 10–20)
-- [ ] Main Flow Deactivate covered (steps 21–28)
-- [ ] AF-1 (Email Exists) covered
-- [ ] AF-2 (Invalid Email) covered
-- [ ] AF-3 (Missing Fields) covered
-- [ ] AF-4 (Database Error) covered
-- [ ] AF-5 (Cancel Create/Edit) covered
-- [ ] AF-6 (Cancel Deactivate) covered
-- [ ] BR-01–BR-07 covered
+- [x] Main Flow Create covered (steps 1–9)
+- [x] Main Flow Edit covered (steps 10–20)
+- [x] Main Flow Deactivate covered (steps 21–28)
+- [x] AF-1 (Email Exists) covered
+- [x] AF-2 (Invalid Email) covered
+- [x] AF-3 (Missing Fields) covered
+- [x] AF-4 (Database Error) covered
+- [x] AF-5 (Cancel Create/Edit) covered
+- [x] AF-6 (Cancel Deactivate) covered
+- [x] BR-01–BR-07 covered
 
 ---
 

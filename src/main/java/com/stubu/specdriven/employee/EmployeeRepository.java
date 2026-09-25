@@ -10,5 +10,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     List<Employee> findByManagerId(Long managerId);
 
+    long countByRoleAndActive(Role role, boolean active);
+
     List<Employee> findByDepartmentId(Long departmentId);
 }

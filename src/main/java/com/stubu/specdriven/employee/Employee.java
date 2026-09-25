@@ -100,6 +100,22 @@ public class Employee {
         return role;
     }
 
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    public void setDepartmentId(Long departmentId) {
+        this.departmentId = departmentId;
+    }
+
     public Long getManagerId() {
         return managerId;
     }

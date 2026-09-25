@@ -36,7 +36,7 @@ import org.springframework.dao.DataAccessException;
  * reviewed at a time; there is no bulk approval.
  */
 @Route(value = ApprovalsView.ROUTE, layout = MainLayout.class)
-@RolesAllowed({ "MANAGER", "ADMIN" })
+@RolesAllowed("MANAGER")
 public class ApprovalsView extends VerticalLayout implements HasDynamicTitle, LocaleChangeObserver {
 
     public static final String ROUTE = "approvals";

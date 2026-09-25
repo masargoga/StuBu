@@ -1,5 +1,6 @@
 package com.stubu.specdriven.base;
 
+import com.stubu.specdriven.admin.EmployeeManagementView;
 import com.stubu.specdriven.approval.ApprovalsView;
 import com.stubu.specdriven.approval.EmployeesView;
 import com.stubu.specdriven.employee.Role;
@@ -25,7 +26,7 @@ import jakarta.annotation.security.PermitAll;
 
 /**
  * Application shell for authenticated users: title, who is signed in, sign out, and the navigation drawer
- * (Today, My Timesheet, and Approvals and Employees for managers and administrators).
+ * (Today and My Timesheet for everybody; Approvals and Employees for managers; Employees for administrators).
  */
 @PermitAll
 public class MainLayout extends AppLayout implements LocaleChangeObserver {
@@ -39,6 +40,8 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
     private final SideNavItem approvals = new SideNavItem("", ApprovalsView.class,
             VaadinIcon.CHECK_SQUARE_O.create());
     private final SideNavItem employees = new SideNavItem("", EmployeesView.class, VaadinIcon.USERS.create());
+    private final SideNavItem manageEmployees = new SideNavItem("", EmployeeManagementView.class,
+            VaadinIcon.USERS.create());
     private final DrawerToggle drawerToggle = new DrawerToggle();
 
     public MainLayout(AuthenticationContext authenticationContext) {
@@ -47,10 +50,9 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
         HorizontalLayout user = new HorizontalLayout();
         user.addClassName("app-user");
         user.setAlignItems(FlexComponent.Alignment.CENTER);
-        boolean reviewer = authenticationContext.getAuthenticatedUser(Object.class)
+        Role role = authenticationContext.getAuthenticatedUser(Object.class)
                 .filter(EmployeePrincipal.class::isInstance).map(EmployeePrincipal.class::cast)
-                .map(EmployeePrincipal::getRole).filter(role -> role == Role.MANAGER || role == Role.ADMIN)
-                .isPresent();
+                .map(EmployeePrincipal::getRole).orElse(Role.EMPLOYEE);
         authenticationContext.getAuthenticatedUser(Object.class).ifPresent(principal -> {
             String name = principal instanceof EmployeePrincipal employee ? employee.getFullName()
                     : authenticationContext.getPrincipalName().orElse("");
@@ -77,9 +79,13 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
         timesheet.setTestId("nav-timesheet");
         approvals.setTestId("nav-approvals");
         employees.setTestId("nav-employees");
+        manageEmployees.setTestId("nav-employees");
         navigation.addItem(today, timesheet);
-        if (reviewer) {
+        if (role == Role.MANAGER) {
             navigation.addItem(approvals, employees);
+        }
+        if (role == Role.ADMIN) {
+            navigation.addItem(manageEmployees);
         }
         navigation.addClassName("app-navigation");
         addToDrawer(new Scroller(navigation));
@@ -93,6 +99,7 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
         timesheet.setLabel(getTranslation("nav.timesheet"));
         approvals.setLabel(getTranslation("nav.approvals"));
         employees.setLabel(getTranslation("nav.employees"));
+        manageEmployees.setLabel(getTranslation("nav.employees"));
         navigation.getElement().setAttribute("aria-label", getTranslation("nav.label"));
         drawerToggle.setAriaLabel(getTranslation("nav.toggle"));
     }

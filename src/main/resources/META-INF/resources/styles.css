@@ -810,3 +810,60 @@ vaadin-grid::part(holiday-cell) {
   color: var(--vaadin-text-color-secondary);
   font-size: var(--aura-font-size-l);
 }
+
+/* UC-011: employee management */
+.manage-view .manage-add {
+  align-self: flex-start;
+  min-height: 3rem;
+  font-size: var(--aura-font-size-xl);
+}
+
+.manage-view vaadin-text-field {
+  --vaadin-input-field-value-font-size: var(--aura-font-size-l);
+  --vaadin-input-field-label-font-size: var(--aura-font-size-l);
+}
+
+.manage-head,
+.manage-view .approval-head,
+.manage-view .approval-row {
+  grid-template-columns: 1.5fr 2.4fr 1.1fr 1.4fr 1.6fr 0.9fr 25rem;
+}
+
+.manage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vaadin-gap-xs);
+  justify-content: flex-end;
+}
+
+.manage-row.employee-inactive {
+  background: transparent;
+  border-style: dashed;
+  color: var(--vaadin-text-color-secondary);
+}
+
+@media (max-width: 1200px) {
+  .manage-view .approval-head {
+    display: none;
+  }
+
+  .manage-view .approval-row {
+    grid-template-columns: 1fr;
+    gap: var(--vaadin-gap-xs);
+    padding: var(--vaadin-padding-m);
+  }
+
+  .manage-view .approval-cell[data-label]::before {
+    content: attr(data-label) ": ";
+    color: var(--vaadin-text-color-secondary);
+  }
+
+  .manage-actions {
+    justify-content: flex-start;
+    margin-top: var(--vaadin-gap-xs);
+  }
+
+  .manage-actions .review-button {
+    flex: 1 1 8rem;
+  }
+}
