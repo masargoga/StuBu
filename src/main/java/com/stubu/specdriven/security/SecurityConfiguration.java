@@ -29,6 +29,8 @@ class SecurityConfiguration {
             LoginSuccessHandler successHandler, LoginFailureHandler failureHandler, EmployeeRepository employees,
             @Value("${stubu.security.recheck-interval:PT5S}") Duration recheckInterval) throws Exception {
         http.addFilterBefore(new CurrentEmployeeFilter(employees, recheckInterval), AuthorizationFilter.class);
+        // The probes of Docker and Kubernetes cannot sign in; they only see "UP" or "DOWN".
+        http.authorizeHttpRequests(requests -> requests.requestMatchers("/actuator/health/**").permitAll());
         http.oauth2Login(oauth2 -> oauth2
                 .loginPage(LOGIN_PATH)
                 .userInfoEndpoint(userInfo -> userInfo.oidcUserService(oidcUserService))

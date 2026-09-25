@@ -64,6 +64,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
+        <!-- Health, liveness and readiness endpoints for Docker and Kubernetes -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
         <!-- Persistence: JPA/Hibernate with Flyway migrations -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -1,0 +1,13 @@
+target/
+.git/
+.gitignore
+.idea/
+.vscode/
+*.iml
+node_modules/
+frontend/generated/
+.claude/
+spec/
+*.md
+*.txt
+deploy/

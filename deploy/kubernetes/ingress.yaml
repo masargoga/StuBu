@@ -1,0 +1,34 @@
+# The user's session lives in one pod, so the ingress keeps a browser on the same pod (cookie affinity). If a pod
+# goes away the user is asked to sign in again. These annotations are for the NGINX ingress controller; other
+# controllers have their own settings for sticky sessions.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: stubu
+  labels:
+    app.kubernetes.io/name: stubu
+  annotations:
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/session-cookie-name: STUBUROUTE
+    nginx.ingress.kubernetes.io/session-cookie-samesite: Lax
+    nginx.ingress.kubernetes.io/session-cookie-secure: "true"
+    # The push connection of the user interface (WebSocket) stays open.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - stubu.example.com
+      secretName: stubu-tls
+  rules:
+    - host: stubu.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: stubu
+                port:
+                  name: http

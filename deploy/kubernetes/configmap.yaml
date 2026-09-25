@@ -1,0 +1,18 @@
+# Settings that are not secret. Adjust the values for your environment.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stubu-config
+  labels:
+    app.kubernetes.io/name: stubu
+data:
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres.example.svc:5432/stubu"
+  # The session cookie is only sent over HTTPS (the ingress terminates TLS).
+  SESSION_COOKIE_SECURE: "true"
+  STUBU_NOTIFICATIONS_FROM: "noreply@example.com"
+  STUBU_NOTIFICATIONS_LOCALE: "de"
+  STUBU_NOTIFICATIONS_ZONE: "Europe/Berlin"
+  STUBU_RETENTION_TIME_RECORDS: "P1Y"
+  # Providers are offered on the login page when their client id is set (the secrets are in stubu-secrets).
+  STUBU_IAM_PROVIDERS_MICROSOFT_TENANTID: "00000000-0000-0000-0000-000000000000"
+  STUBU_IAM_PROVIDERS_MICROSOFT_CLIENTID: "00000000-0000-0000-0000-000000000000"

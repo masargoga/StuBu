@@ -26,5 +26,22 @@ RUN --mount=type=cache,target=/root/.m2 \
     ./mvnw clean package -DskipTests -Dvaadin.proKey=${PRO_KEY} -Dvaadin.offlineKey=${OFFLINE_KEY}'
 
 FROM eclipse-temurin:25-jre-alpine
-COPY --from=build /app/target/*.jar app.jar
-ENTRYPOINT ["java", "-jar", "/app.jar", "--spring.profiles.active=prod"]
+
+# Run as a normal user, not as root.
+RUN addgroup -S stubu && adduser -S stubu -G stubu
+WORKDIR /app
+COPY --from=build --chown=stubu:stubu /app/target/*.jar app.jar
+USER stubu
+
+# The production profile (structured logs); everything else is configured with environment variables,
+# see DEVELOPMENT.md. The heap follows the memory limit of the container.
+ENV SPRING_PROFILES_ACTIVE=prod
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75"
+
+EXPOSE 8080
+
+# Kubernetes uses its own probes (deploy/kubernetes); this one is for plain Docker.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
+  CMD wget -q -O /dev/null "http://localhost:${PORT:-8080}/actuator/health/liveness" || exit 1
+
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

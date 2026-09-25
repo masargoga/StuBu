@@ -1,0 +1,12 @@
+# Keeps at least one pod running while nodes are drained.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: stubu
+  labels:
+    app.kubernetes.io/name: stubu
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: stubu
