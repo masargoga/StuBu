@@ -1,6 +1,10 @@
 package com.stubu.specdriven.monthlytimesheet;
 
+import com.stubu.specdriven.base.BrowserTimeZone;
+import com.stubu.specdriven.base.DialogError;
+import com.stubu.specdriven.base.LoadErrorBox;
 import com.stubu.specdriven.base.MainLayout;
+import com.stubu.specdriven.base.MessageBox;
 import com.stubu.specdriven.security.EmployeePrincipal;
 import com.stubu.specdriven.timesheet.TimesheetStatus;
 import com.stubu.specdriven.timetracking.DurationFormat;
@@ -98,10 +102,8 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
     private final Span statusText = new Span();
     private final Button submit = new Button();
     private final Span submitNote = new Span();
-    private final Div messageBox = new Div();
-    private final Div loadErrorBox = new Div();
-    private final Span loadError = new Span();
-    private final Button retry = new Button();
+    private final MessageBox messageBox = new MessageBox();
+    private final LoadErrorBox loadErrorBox = new LoadErrorBox(this::refresh);
     private final VerticalLayout content = new VerticalLayout();
     private final Span total = new Span();
     private final Span breaks = new Span();
@@ -152,18 +154,6 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
         actions.addClassName("status-actions");
         statusBox.add(statusLine, actions);
         statusBox.addClassName("timesheet-status");
-
-        messageBox.addClassName("time-message");
-        messageBox.setVisible(false);
-        var errorIcon = VaadinIcon.WARNING.create();
-        errorIcon.getElement().setAttribute("aria-hidden", "true");
-        retry.setTestId("retry");
-        retry.addThemeVariants(ButtonVariant.PRIMARY);
-        retry.addClickListener(event -> refresh());
-        loadErrorBox.add(errorIcon, loadError, retry);
-        loadErrorBox.addClassNames("time-message", "time-message-error", "time-load-error");
-        loadErrorBox.getElement().setAttribute("role", "alert");
-        loadErrorBox.setVisible(false);
 
         total.addClassNames("time-total", "month-total");
         total.setTestId("month-total");
@@ -231,20 +221,13 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
     /** The browser's time zone decides what "today" and the current month are. */
     @Override
     protected void onAttach(AttachEvent attachEvent) {
-        attachEvent.getUI().getPage().retrieveExtendedClientDetails(details -> {
-            try {
-                ZoneId browserZone = ZoneId.of(details.getTimeZoneId());
-                if (!browserZone.equals(zone)) {
-                    zone = browserZone;
-                    if (month.isAfter(service.currentMonth(zone))) {
-                        month = service.currentMonth(zone);
-                    }
-                    load();
-                    render();
-                }
-            } catch (DateTimeException | NullPointerException unknownZone) {
-                log.debug("Keeping the server time zone, the browser reported {}", details.getTimeZoneId());
+        BrowserTimeZone.detect(attachEvent.getUI(), zone, browserZone -> {
+            zone = browserZone;
+            if (month.isAfter(service.currentMonth(zone))) {
+                month = service.currentMonth(zone);
             }
+            load();
+            render();
         });
     }
 
@@ -324,10 +307,7 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
         dialog.setHeaderTitle(getTranslation(prefix + ".title"));
         Paragraph question = new Paragraph(getTranslation(prefix + ".confirm"));
         question.addClassName("time-dialog-text");
-        Div error = new Div();
-        error.addClassName("time-dialog-error");
-        error.getElement().setAttribute("role", "alert");
-        error.setVisible(false);
+        DialogError error = new DialogError();
         VerticalLayout body = new VerticalLayout(question, error);
         body.setPadding(false);
         body.addClassName("time-dialog-content");
@@ -386,21 +366,9 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
         monthSelect.setValue(month);
         updatingSelector = false;
 
-        if (message == null) {
-            messageBox.setVisible(false);
-        } else {
-            var icon = (message.error() ? VaadinIcon.WARNING : VaadinIcon.CHECK_CIRCLE).create();
-            icon.getElement().setAttribute("aria-hidden", "true");
-            messageBox.removeAll();
-            messageBox.add(icon, new Span(getTranslation(message.key())));
-            messageBox.setClassName("time-message-error", message.error());
-            messageBox.getElement().setAttribute("role", message.error() ? "alert" : "status");
-            messageBox.setVisible(true);
-        }
+        messageBox.show(message == null ? null : getTranslation(message.key()), message != null && message.error());
 
-        loadError.setText(getTranslation("timesheet.loadFailed"));
-        retry.setText(getTranslation("time.retry"));
-        loadErrorBox.setVisible(loadFailed);
+        loadErrorBox.update(loadFailed, getTranslation("timesheet.loadFailed"), getTranslation("time.retry"));
         boolean showSheet = !loadFailed && sheet != null;
         content.setVisible(showSheet);
         if (!showSheet) {

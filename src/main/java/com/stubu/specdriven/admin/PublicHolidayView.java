@@ -1,6 +1,11 @@
 package com.stubu.specdriven.admin;
 
+import static com.stubu.specdriven.base.TableCells.cell;
+
+import com.stubu.specdriven.base.DialogError;
+import com.stubu.specdriven.base.LoadErrorBox;
 import com.stubu.specdriven.base.MainLayout;
+import com.stubu.specdriven.base.MessageBox;
 import com.stubu.specdriven.employee.EditConflictException;
 import com.stubu.specdriven.holiday.HolidayNotFoundException;
 import com.stubu.specdriven.holiday.HolidayValidationException;
@@ -64,10 +69,8 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
     private final H2 heading = new H2();
     private final Button add = new Button(VaadinIcon.PLUS.create());
     private final Select<Integer> year = new Select<>();
-    private final Div messageBox = new Div();
-    private final Div loadErrorBox = new Div();
-    private final Span loadError = new Span();
-    private final Button retry = new Button();
+    private final MessageBox messageBox = new MessageBox();
+    private final LoadErrorBox loadErrorBox = new LoadErrorBox(this::refresh);
     private final Div emptyHint = new Div();
     private final Div list = new Div();
     private boolean updatingYear;
@@ -95,17 +98,6 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
                 render();
             }
         });
-        messageBox.addClassName("time-message");
-        messageBox.setVisible(false);
-        var errorIcon = VaadinIcon.WARNING.create();
-        errorIcon.getElement().setAttribute("aria-hidden", "true");
-        retry.setTestId("retry");
-        retry.addThemeVariants(ButtonVariant.PRIMARY);
-        retry.addClickListener(event -> refresh());
-        loadErrorBox.add(errorIcon, loadError, retry);
-        loadErrorBox.addClassNames("time-message", "time-message-error", "time-load-error");
-        loadErrorBox.getElement().setAttribute("role", "alert");
-        loadErrorBox.setVisible(false);
         emptyHint.addClassName("time-empty");
         emptyHint.setTestId("no-holidays");
         list.addClassNames("approvals-list", "holiday-list");
@@ -151,21 +143,9 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
         heading.setText(getTranslation("holidays.title"));
         add.setText(getTranslation("holidays.add"));
 
-        if (message == null) {
-            messageBox.setVisible(false);
-        } else {
-            var icon = (message.error() ? VaadinIcon.WARNING : VaadinIcon.CHECK_CIRCLE).create();
-            icon.getElement().setAttribute("aria-hidden", "true");
-            messageBox.removeAll();
-            messageBox.add(icon, new Span(getTranslation(message.key(), message.parameters())));
-            messageBox.setClassName("time-message-error", message.error());
-            messageBox.getElement().setAttribute("role", message.error() ? "alert" : "status");
-            messageBox.setVisible(true);
-        }
+        messageBox.show(message == null ? null : getTranslation(message.key(), message.parameters()), message != null && message.error());
 
-        loadError.setText(getTranslation("holidays.loadFailed"));
-        retry.setText(getTranslation("time.retry"));
-        loadErrorBox.setVisible(loadFailed);
+        loadErrorBox.update(loadFailed, getTranslation("holidays.loadFailed"), getTranslation("time.retry"));
         add.setEnabled(!loadFailed);
         renderYears();
         year.setVisible(!loadFailed);
@@ -239,16 +219,6 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
         return button;
     }
 
-    private static Span cell(String role, String text, String label) {
-        Span cell = new Span(text == null ? "" : text);
-        cell.addClassName("approval-cell");
-        cell.getElement().setAttribute("role", role);
-        if (label != null) {
-            cell.getElement().setAttribute("data-label", label);
-        }
-        return cell;
-    }
-
     // --- add and edit ------------------------------------------------------------------------------
 
     private void openForm(PublicHoliday existing) {
@@ -270,10 +240,7 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
             date.setValue(existing.getDate());
             name.setValue(existing.getName());
         }
-        Div error = new Div();
-        error.addClassName("time-dialog-error");
-        error.getElement().setAttribute("role", "alert");
-        error.setVisible(false);
+        DialogError error = new DialogError();
         Div body = new Div(date, name, error);
         body.addClassNames("time-dialog-content", "review-dialog-content");
         dialog.add(body);
@@ -344,10 +311,7 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
         Paragraph question = new Paragraph(getTranslation("holidays.delete.confirm", holiday.getName(),
                 formatted(holiday.getDate())));
         question.addClassName("time-dialog-text");
-        Div error = new Div();
-        error.addClassName("time-dialog-error");
-        error.getElement().setAttribute("role", "alert");
-        error.setVisible(false);
+        DialogError error = new DialogError();
         Div body = new Div(question, error);
         body.addClassNames("time-dialog-content", "review-dialog-content");
         dialog.add(body);

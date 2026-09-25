@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static com.stubu.specdriven.testsupport.ViewTexts.text;
 
 import com.stubu.specdriven.approval.ApprovalsView;
 import com.stubu.specdriven.approval.InvalidReasonException;
@@ -697,25 +698,4 @@ class UC007ReviewApproveRejectTimesheet extends SpringBrowserlessTest {
         return find(Button.class).all().stream().filter(button -> testId.equals(button.getTestId())).toList();
     }
 
-    /** The visible text of a component tree; parts that are hidden are left out. */
-    private static String text(Component component) {
-        return normalize(text(component.getElement()));
-    }
-
-    private static String text(Element element) {
-        if (element.isTextNode()) {
-            return element.getText();
-        }
-        if (!element.isVisible()) {
-            return "";
-        }
-        StringBuilder text = new StringBuilder();
-        element.getChildren().forEach(child -> text.append(' ').append(text(child)));
-        return text.toString();
-    }
-
-    /** The time format separates the time from AM/PM with a narrow no-break space. */
-    private static String normalize(String text) {
-        return text.replace(' ', ' ').replace(' ', ' ');
-    }
 }

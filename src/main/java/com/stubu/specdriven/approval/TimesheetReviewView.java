@@ -1,7 +1,11 @@
 package com.stubu.specdriven.approval;
 
+import com.stubu.specdriven.base.BrowserTimeZone;
+import com.stubu.specdriven.base.DialogError;
 import com.stubu.specdriven.base.FlashMessage;
+import com.stubu.specdriven.base.LoadErrorBox;
 import com.stubu.specdriven.base.MainLayout;
+import com.stubu.specdriven.base.MessageBox;
 import com.stubu.specdriven.monthlytimesheet.MonthTimeline;
 import com.stubu.specdriven.monthlytimesheet.MonthlyTimesheet;
 import com.stubu.specdriven.security.EmployeePrincipal;
@@ -67,10 +71,8 @@ public class TimesheetReviewView extends VerticalLayout implements HasUrlParamet
 
     private final Button back = new Button(VaadinIcon.ANGLE_LEFT.create());
     private final H2 heading = new H2();
-    private final Div messageBox = new Div();
-    private final Div loadErrorBox = new Div();
-    private final Span loadError = new Span();
-    private final Button retry = new Button();
+    private final MessageBox messageBox = new MessageBox();
+    private final LoadErrorBox loadErrorBox = new LoadErrorBox(this::refresh);
     private final VerticalLayout content = new VerticalLayout();
     private final Div statusBox = new Div();
     private final Badge statusBadge = new Badge();
@@ -97,18 +99,6 @@ public class TimesheetReviewView extends VerticalLayout implements HasUrlParamet
         back.setTestId("back");
         back.addThemeVariants(ButtonVariant.TERTIARY);
         back.addClickListener(event -> getUI().ifPresent(ui -> ui.navigate(ApprovalsView.class)));
-
-        messageBox.addClassName("time-message");
-        messageBox.setVisible(false);
-        var errorIcon = VaadinIcon.WARNING.create();
-        errorIcon.getElement().setAttribute("aria-hidden", "true");
-        retry.setTestId("retry");
-        retry.addThemeVariants(ButtonVariant.PRIMARY);
-        retry.addClickListener(event -> refresh());
-        loadErrorBox.add(errorIcon, loadError, retry);
-        loadErrorBox.addClassNames("time-message", "time-message-error", "time-load-error");
-        loadErrorBox.getElement().setAttribute("role", "alert");
-        loadErrorBox.setVisible(false);
 
         statusBadge.setTestId("timesheet-status");
         statusText.setTestId("status-text");
@@ -162,16 +152,9 @@ public class TimesheetReviewView extends VerticalLayout implements HasUrlParamet
     /** The browser's time zone decides which day an entry belongs to. */
     @Override
     protected void onAttach(AttachEvent attachEvent) {
-        attachEvent.getUI().getPage().retrieveExtendedClientDetails(clientDetails -> {
-            try {
-                ZoneId browserZone = ZoneId.of(clientDetails.getTimeZoneId());
-                if (!browserZone.equals(zone)) {
-                    zone = browserZone;
-                    refresh();
-                }
-            } catch (DateTimeException | NullPointerException unknownZone) {
-                log.debug("Keeping the server time zone, the browser reported {}", clientDetails.getTimeZoneId());
-            }
+        BrowserTimeZone.detect(attachEvent.getUI(), zone, browserZone -> {
+            zone = browserZone;
+            refresh();
         });
     }
 
@@ -216,21 +199,9 @@ public class TimesheetReviewView extends VerticalLayout implements HasUrlParamet
         back.setText(getTranslation("review.back"));
         back.getElement().setAttribute("aria-label", getTranslation("review.back"));
 
-        if (message == null) {
-            messageBox.setVisible(false);
-        } else {
-            var icon = (message.error() ? VaadinIcon.WARNING : VaadinIcon.CHECK_CIRCLE).create();
-            icon.getElement().setAttribute("aria-hidden", "true");
-            messageBox.removeAll();
-            messageBox.add(icon, new Span(getTranslation(message.key())));
-            messageBox.setClassName("time-message-error", message.error());
-            messageBox.getElement().setAttribute("role", message.error() ? "alert" : "status");
-            messageBox.setVisible(true);
-        }
+        messageBox.show(message == null ? null : getTranslation(message.key()), message != null && message.error());
 
-        loadError.setText(getTranslation("review.loadFailed"));
-        retry.setText(getTranslation("time.retry"));
-        loadErrorBox.setVisible(loadFailed);
+        loadErrorBox.update(loadFailed, getTranslation("review.loadFailed"), getTranslation("time.retry"));
         boolean show = !loadFailed && details != null;
         content.setVisible(show);
         heading.setVisible(show);
@@ -423,10 +394,7 @@ public class TimesheetReviewView extends VerticalLayout implements HasUrlParamet
     }
 
     private static Div errorBox() {
-        Div error = new Div();
-        error.addClassName("time-dialog-error");
-        error.getElement().setAttribute("role", "alert");
-        error.setVisible(false);
+        DialogError error = new DialogError();
         return error;
     }
 

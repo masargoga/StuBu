@@ -1,5 +1,9 @@
 package com.stubu.specdriven.timetracking;
 
+import com.stubu.specdriven.base.BrowserTimeZone;
+import com.stubu.specdriven.base.DialogError;
+import com.stubu.specdriven.base.LoadErrorBox;
+import com.stubu.specdriven.base.MessageBox;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
@@ -63,10 +67,8 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
     private final Div status = new Div();
     private final Button checkIn = new Button();
     private final Button checkOut = new Button();
-    private final Div messageBox = new Div();
-    private final Div loadErrorBox = new Div();
-    private final Span loadError = new Span();
-    private final Button retry = new Button();
+    private final MessageBox messageBox = new MessageBox();
+    private final LoadErrorBox loadErrorBox = new LoadErrorBox(this::refresh);
     private final VerticalLayout day = new VerticalLayout();
     private final Span date = new Span();
     private final Span currentTime = new Span();
@@ -98,19 +100,6 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
         HorizontalLayout actions = new HorizontalLayout(checkIn, checkOut);
         actions.addClassName("time-actions");
         actions.setWidthFull();
-
-        messageBox.addClassName("time-message");
-        messageBox.setVisible(false);
-
-        var errorIcon = VaadinIcon.WARNING.create();
-        errorIcon.getElement().setAttribute("aria-hidden", "true");
-        retry.setTestId("retry");
-        retry.addThemeVariants(ButtonVariant.PRIMARY);
-        retry.addClickListener(event -> refresh());
-        loadErrorBox.add(errorIcon, loadError, retry);
-        loadErrorBox.addClassNames("time-message", "time-message-error", "time-load-error");
-        loadErrorBox.getElement().setAttribute("role", "alert");
-        loadErrorBox.setVisible(false);
 
         status.addClassName("time-status");
         status.getElement().setAttribute("role", "status");
@@ -148,14 +137,10 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
     @Override
     protected void onAttach(AttachEvent attachEvent) {
         startRefreshTimer(attachEvent.getUI());
-        attachEvent.getUI().getPage().retrieveExtendedClientDetails(details -> {
-            try {
-                zone = ZoneId.of(details.getTimeZoneId());
-                load();
-                render();
-            } catch (DateTimeException | NullPointerException unknownZone) {
-                log.debug("Keeping the server time zone, the browser reported {}", details.getTimeZoneId());
-            }
+        BrowserTimeZone.detect(attachEvent.getUI(), null, browserZone -> {
+            zone = browserZone;
+            load();
+            render();
         });
     }
 
@@ -262,10 +247,7 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
         startDate.setRequired(true);
         TimePicker startTime = new TimePicker(getTranslation("time.missing.time"));
         startTime.setRequired(true);
-        Div error = new Div();
-        error.addClassName("time-dialog-error");
-        error.getElement().setAttribute("role", "alert");
-        error.setVisible(false);
+        DialogError error = new DialogError();
 
         HorizontalLayout fields = new HorizontalLayout(startDate, startTime);
         fields.addClassName("time-dialog-fields");
@@ -405,21 +387,9 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
         checkIn.setThemeVariant(ButtonVariant.PRIMARY, !working);
         checkOut.setThemeVariant(ButtonVariant.PRIMARY, working);
 
-        if (message == null) {
-            messageBox.setVisible(false);
-        } else {
-            var icon = (message.error() ? VaadinIcon.WARNING : VaadinIcon.CHECK_CIRCLE).create();
-            icon.getElement().setAttribute("aria-hidden", "true");
-            messageBox.removeAll();
-            messageBox.add(icon, new Span(getTranslation(message.key(), format(message.args(), locale))));
-            messageBox.setClassName("time-message-error", message.error());
-            messageBox.getElement().setAttribute("role", message.error() ? "alert" : "status");
-            messageBox.setVisible(true);
-        }
+        messageBox.show(message == null ? null : getTranslation(message.key(), format(message.args(), locale)), message != null && message.error());
 
-        loadError.setText(getTranslation("time.loadFailed"));
-        retry.setText(getTranslation("time.retry"));
-        loadErrorBox.setVisible(loadFailed);
+        loadErrorBox.update(loadFailed, getTranslation("time.loadFailed"), getTranslation("time.retry"));
         boolean showDay = !loadFailed && summary != null;
         day.setVisible(showDay);
         if (!showDay) {

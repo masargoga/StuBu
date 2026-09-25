@@ -1,6 +1,12 @@
 package com.stubu.specdriven.admin;
 
+import static com.stubu.specdriven.base.TableCells.cell;
+
+import com.stubu.specdriven.base.BrowserTimeZone;
+import com.stubu.specdriven.base.DialogError;
+import com.stubu.specdriven.base.LoadErrorBox;
 import com.stubu.specdriven.base.MainLayout;
+import com.stubu.specdriven.base.MessageBox;
 import com.stubu.specdriven.employee.Choice;
 import com.stubu.specdriven.employee.DeactivationRefusedException;
 import com.stubu.specdriven.employee.EmployeeAdminService;
@@ -77,10 +83,8 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
 
     private final H2 heading = new H2();
     private final Button add = new Button(VaadinIcon.PLUS.create());
-    private final Div messageBox = new Div();
-    private final Div loadErrorBox = new Div();
-    private final Span loadError = new Span();
-    private final Button retry = new Button();
+    private final MessageBox messageBox = new MessageBox();
+    private final LoadErrorBox loadErrorBox = new LoadErrorBox(this::refresh);
     private final TextField search = new TextField();
     private final Select<Boolean> status = new Select<>();
     private final Select<Role> role = new Select<>();
@@ -113,17 +117,6 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
         add.addThemeVariants(ButtonVariant.PRIMARY);
         add.addClassName("manage-add");
         add.addClickListener(event -> openForm(null));
-        messageBox.addClassName("time-message");
-        messageBox.setVisible(false);
-        var errorIcon = VaadinIcon.WARNING.create();
-        errorIcon.getElement().setAttribute("aria-hidden", "true");
-        retry.setTestId("retry");
-        retry.addThemeVariants(ButtonVariant.PRIMARY);
-        retry.addClickListener(event -> refresh());
-        loadErrorBox.add(errorIcon, loadError, retry);
-        loadErrorBox.addClassNames("time-message", "time-message-error", "time-load-error");
-        loadErrorBox.getElement().setAttribute("role", "alert");
-        loadErrorBox.setVisible(false);
 
         search.setTestId("employee-search");
         search.setClearButtonVisible(true);
@@ -185,16 +178,9 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
     /** The browser's time zone decides how the last login times are shown. */
     @Override
     protected void onAttach(AttachEvent attachEvent) {
-        attachEvent.getUI().getPage().retrieveExtendedClientDetails(details -> {
-            try {
-                ZoneId browserZone = ZoneId.of(details.getTimeZoneId());
-                if (!browserZone.equals(zone)) {
-                    zone = browserZone;
-                    render();
-                }
-            } catch (DateTimeException | NullPointerException unknownZone) {
-                log.debug("Keeping the server time zone, the browser reported {}", details.getTimeZoneId());
-            }
+        BrowserTimeZone.detect(attachEvent.getUI(), zone, browserZone -> {
+            zone = browserZone;
+            render();
         });
     }
 
@@ -269,21 +255,9 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
         direction.setText(getTranslation(ascending ? "manage.sort.ascending" : "manage.sort.descending"));
         updatingFilters = false;
 
-        if (message == null) {
-            messageBox.setVisible(false);
-        } else {
-            var icon = (message.error() ? VaadinIcon.WARNING : VaadinIcon.CHECK_CIRCLE).create();
-            icon.getElement().setAttribute("aria-hidden", "true");
-            messageBox.removeAll();
-            messageBox.add(icon, new Span(getTranslation(message.key(), message.parameter())));
-            messageBox.setClassName("time-message-error", message.error());
-            messageBox.getElement().setAttribute("role", message.error() ? "alert" : "status");
-            messageBox.setVisible(true);
-        }
+        messageBox.show(message == null ? null : getTranslation(message.key(), message.parameter()), message != null && message.error());
 
-        loadError.setText(getTranslation("manage.loadFailed"));
-        retry.setText(getTranslation("time.retry"));
-        loadErrorBox.setVisible(loadFailed);
+        loadErrorBox.update(loadFailed, getTranslation("manage.loadFailed"), getTranslation("time.retry"));
         add.setEnabled(!loadFailed);
         filters.setVisible(!loadFailed);
 
@@ -377,17 +351,6 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
         return button;
     }
 
-    /** A table cell; on narrow screens the label is shown in front of the value (see styles.css). */
-    private static Span cell(String role, String text, String label) {
-        Span cell = new Span(text == null ? "" : text);
-        cell.addClassName("approval-cell");
-        cell.getElement().setAttribute("role", role);
-        if (label != null) {
-            cell.getElement().setAttribute("data-label", label);
-        }
-        return cell;
-    }
-
     // --- add and edit ------------------------------------------------------------------------------
 
     private void openForm(EmployeeRow existing) {
@@ -420,10 +383,7 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
         reason.setTestId("deactivate-reason");
         reason.setMaxLength(500);
         reason.setWidthFull();
-        Div error = new Div();
-        error.addClassName("time-dialog-error");
-        error.getElement().setAttribute("role", "alert");
-        error.setVisible(false);
+        DialogError error = new DialogError();
         Div body = new Div(question, reason, error);
         body.addClassNames("time-dialog-content", "review-dialog-content");
         dialog.add(body);

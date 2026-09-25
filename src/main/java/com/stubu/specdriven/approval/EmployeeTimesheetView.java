@@ -1,6 +1,8 @@
 package com.stubu.specdriven.approval;
 
+import com.stubu.specdriven.base.BrowserTimeZone;
 import com.stubu.specdriven.base.FlashMessage;
+import com.stubu.specdriven.base.LoadErrorBox;
 import com.stubu.specdriven.base.MainLayout;
 import com.stubu.specdriven.monthlytimesheet.MonthTimeline;
 import com.stubu.specdriven.monthlytimesheet.MonthlyTimesheet;
@@ -76,9 +78,7 @@ public class EmployeeTimesheetView extends VerticalLayout implements HasUrlParam
     private final Button previous = new Button(VaadinIcon.ANGLE_LEFT.create());
     private final Button next = new Button(VaadinIcon.ANGLE_RIGHT.create());
     private final Select<YearMonth> monthSelect = new Select<>();
-    private final Div loadErrorBox = new Div();
-    private final Span loadError = new Span();
-    private final Button retry = new Button();
+    private final LoadErrorBox loadErrorBox = new LoadErrorBox(this::refresh);
     private final Div noTimesheet = new Div();
     private final VerticalLayout content = new VerticalLayout();
     private final Div statusBox = new Div();
@@ -139,15 +139,6 @@ public class EmployeeTimesheetView extends VerticalLayout implements HasUrlParam
         navigation.addClassName("month-navigation");
         navigation.setAlignItems(FlexComponent.Alignment.CENTER);
 
-        retry.setTestId("retry");
-        retry.addThemeVariants(ButtonVariant.PRIMARY);
-        retry.addClickListener(event -> refresh());
-        var errorIcon = VaadinIcon.WARNING.create();
-        errorIcon.getElement().setAttribute("aria-hidden", "true");
-        loadErrorBox.add(errorIcon, loadError, retry);
-        loadErrorBox.addClassNames("time-message", "time-message-error", "time-load-error");
-        loadErrorBox.getElement().setAttribute("role", "alert");
-        loadErrorBox.setVisible(false);
         noTimesheet.addClassName("time-empty");
         noTimesheet.setTestId("no-timesheet");
 
@@ -227,19 +218,12 @@ public class EmployeeTimesheetView extends VerticalLayout implements HasUrlParam
     /** The browser's time zone decides which day an entry belongs to. */
     @Override
     protected void onAttach(AttachEvent attachEvent) {
-        attachEvent.getUI().getPage().retrieveExtendedClientDetails(clientDetails -> {
-            try {
-                ZoneId browserZone = ZoneId.of(clientDetails.getTimeZoneId());
-                if (!browserZone.equals(zone)) {
-                    zone = browserZone;
-                    if (month.isAfter(currentMonth())) {
-                        month = currentMonth();
-                    }
-                    refresh();
-                }
-            } catch (DateTimeException | NullPointerException unknownZone) {
-                log.debug("Keeping the server time zone, the browser reported {}", clientDetails.getTimeZoneId());
+        BrowserTimeZone.detect(attachEvent.getUI(), zone, browserZone -> {
+            zone = browserZone;
+            if (month.isAfter(currentMonth())) {
+                month = currentMonth();
             }
+            refresh();
         });
     }
 
@@ -294,9 +278,7 @@ public class EmployeeTimesheetView extends VerticalLayout implements HasUrlParam
         monthSelect.setValue(month);
         updatingSelector = false;
 
-        loadError.setText(getTranslation("timesheet.loadFailed"));
-        retry.setText(getTranslation("time.retry"));
-        loadErrorBox.setVisible(loadFailed);
+        loadErrorBox.update(loadFailed, getTranslation("timesheet.loadFailed"), getTranslation("time.retry"));
         boolean loaded = !loadFailed && details != null;
         heading.setVisible(loaded);
         roleBadge.setVisible(loaded);

@@ -1,7 +1,11 @@
 package com.stubu.specdriven.approval;
 
+import static com.stubu.specdriven.base.TableCells.cell;
+
 import com.stubu.specdriven.base.FlashMessage;
+import com.stubu.specdriven.base.LoadErrorBox;
 import com.stubu.specdriven.base.MainLayout;
+import com.stubu.specdriven.base.MessageBox;
 import com.stubu.specdriven.security.EmployeePrincipal;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -45,10 +49,8 @@ public class EmployeesView extends VerticalLayout implements HasDynamicTitle, Lo
 
     private final H2 heading = new H2();
     private final ScopeSwitcher scopeSwitcher = new ScopeSwitcher();
-    private final Div messageBox = new Div();
-    private final Div loadErrorBox = new Div();
-    private final Span loadError = new Span();
-    private final Button retry = new Button();
+    private final MessageBox messageBox = new MessageBox();
+    private final LoadErrorBox loadErrorBox = new LoadErrorBox(this::refresh);
     private final TextField search = new TextField();
     private final Div emptyHint = new Div();
     private final Div list = new Div();
@@ -62,18 +64,6 @@ public class EmployeesView extends VerticalLayout implements HasDynamicTitle, Lo
 
         addClassNames("timesheet-view", "employees-view");
         setPadding(true);
-
-        messageBox.addClassName("time-message");
-        messageBox.setVisible(false);
-        var errorIcon = VaadinIcon.WARNING.create();
-        errorIcon.getElement().setAttribute("aria-hidden", "true");
-        retry.setTestId("retry");
-        retry.addThemeVariants(ButtonVariant.PRIMARY);
-        retry.addClickListener(event -> refresh());
-        loadErrorBox.add(errorIcon, loadError, retry);
-        loadErrorBox.addClassNames("time-message", "time-message-error", "time-load-error");
-        loadErrorBox.getElement().setAttribute("role", "alert");
-        loadErrorBox.setVisible(false);
 
         search.setTestId("employee-search");
         search.setClearButtonVisible(true);
@@ -145,25 +135,13 @@ public class EmployeesView extends VerticalLayout implements HasDynamicTitle, Lo
         search.setLabel(getTranslation("employees.search"));
         search.setPlaceholder(getTranslation("employees.search.placeholder"));
 
-        if (message == null) {
-            messageBox.setVisible(false);
-        } else {
-            var icon = (message.error() ? VaadinIcon.WARNING : VaadinIcon.CHECK_CIRCLE).create();
-            icon.getElement().setAttribute("aria-hidden", "true");
-            messageBox.removeAll();
-            messageBox.add(icon, new Span(getTranslation(message.key())));
-            messageBox.setClassName("time-message-error", message.error());
-            messageBox.getElement().setAttribute("role", message.error() ? "alert" : "status");
-            messageBox.setVisible(true);
-        }
+        messageBox.show(message == null ? null : getTranslation(message.key()), message != null && message.error());
 
         scopeSwitcher.setVisible(!loadFailed && options != null);
         if (options != null) {
             scopeSwitcher.update(options, scope);
         }
-        loadError.setText(getTranslation("employees.loadFailed"));
-        retry.setText(getTranslation("time.retry"));
-        loadErrorBox.setVisible(loadFailed);
+        loadErrorBox.update(loadFailed, getTranslation("employees.loadFailed"), getTranslation("time.retry"));
         search.setVisible(!loadFailed);
 
         String query = search.getValue() == null ? "" : search.getValue().strip().toLowerCase(Locale.ROOT);
@@ -215,14 +193,4 @@ public class EmployeesView extends VerticalLayout implements HasDynamicTitle, Lo
         return view;
     }
 
-    /** A table cell; on narrow screens the label is shown in front of the value (see styles.css). */
-    private static Span cell(String role, String text, String label) {
-        Span cell = new Span(text);
-        cell.addClassName("approval-cell");
-        cell.getElement().setAttribute("role", role);
-        if (label != null) {
-            cell.getElement().setAttribute("data-label", label);
-        }
-        return cell;
-    }
 }

@@ -1,7 +1,11 @@
 package com.stubu.specdriven.admin;
 
+import static com.stubu.specdriven.base.TableCells.cell;
+
 import com.stubu.specdriven.approval.EmployeeTimesheetView;
+import com.stubu.specdriven.base.BrowserTimeZone;
 import com.stubu.specdriven.base.FlashMessage;
+import com.stubu.specdriven.base.LoadErrorBox;
 import com.stubu.specdriven.base.MainLayout;
 import com.stubu.specdriven.employee.EmployeeNotFoundException;
 import com.stubu.specdriven.employee.EmployeeRow;
@@ -64,9 +68,7 @@ public class EmployeeDetailView extends VerticalLayout implements HasUrlParamete
     private final Button back = new Button(VaadinIcon.ANGLE_LEFT.create());
     private final H2 heading = new H2();
     private final Badge statusBadge = new Badge();
-    private final Div loadErrorBox = new Div();
-    private final Span loadError = new Span();
-    private final Button retry = new Button();
+    private final LoadErrorBox loadErrorBox = new LoadErrorBox(this::refresh);
     private final Div info = new Div();
     private final H3 timesheetsHeading = new H3();
     private final Div emptyHint = new Div();
@@ -92,15 +94,6 @@ public class EmployeeDetailView extends VerticalLayout implements HasUrlParamete
         title.setPadding(false);
         title.setWrap(true);
 
-        var errorIcon = VaadinIcon.WARNING.create();
-        errorIcon.getElement().setAttribute("aria-hidden", "true");
-        retry.setTestId("retry");
-        retry.addThemeVariants(ButtonVariant.PRIMARY);
-        retry.addClickListener(event -> refresh());
-        loadErrorBox.add(errorIcon, loadError, retry);
-        loadErrorBox.addClassNames("time-message", "time-message-error", "time-load-error");
-        loadErrorBox.getElement().setAttribute("role", "alert");
-        loadErrorBox.setVisible(false);
         info.addClassName("detail-info");
         info.setTestId("employee-info");
         emptyHint.addClassName("time-empty");
@@ -130,16 +123,9 @@ public class EmployeeDetailView extends VerticalLayout implements HasUrlParamete
     /** The browser's time zone decides how times are shown. */
     @Override
     protected void onAttach(AttachEvent attachEvent) {
-        attachEvent.getUI().getPage().retrieveExtendedClientDetails(clientDetails -> {
-            try {
-                ZoneId browserZone = ZoneId.of(clientDetails.getTimeZoneId());
-                if (!browserZone.equals(zone)) {
-                    zone = browserZone;
-                    render();
-                }
-            } catch (DateTimeException | NullPointerException unknownZone) {
-                log.debug("Keeping the server time zone, the browser reported {}", clientDetails.getTimeZoneId());
-            }
+        BrowserTimeZone.detect(attachEvent.getUI(), zone, browserZone -> {
+            zone = browserZone;
+            render();
         });
     }
 
@@ -183,9 +169,7 @@ public class EmployeeDetailView extends VerticalLayout implements HasUrlParamete
         Locale locale = getLocale();
         back.setText(getTranslation("employeeDetail.back"));
         back.getElement().setAttribute("aria-label", getTranslation("employeeDetail.back"));
-        loadError.setText(getTranslation("employeeDetail.loadFailed"));
-        retry.setText(getTranslation("time.retry"));
-        loadErrorBox.setVisible(loadFailed);
+        loadErrorBox.update(loadFailed, getTranslation("employeeDetail.loadFailed"), getTranslation("time.retry"));
         boolean loaded = !loadFailed && details != null;
         heading.setVisible(loaded);
         statusBadge.setVisible(loaded);
@@ -285,16 +269,6 @@ public class EmployeeDetailView extends VerticalLayout implements HasUrlParamete
         Div field = new Div(label, text);
         field.addClassName("detail-field");
         return field;
-    }
-
-    private static Span cell(String role, String text, String label) {
-        Span cell = new Span(text == null ? "" : text);
-        cell.addClassName("approval-cell");
-        cell.getElement().setAttribute("role", role);
-        if (label != null) {
-            cell.getElement().setAttribute("data-label", label);
-        }
-        return cell;
     }
 
     private String dateTime(Instant at, Locale locale) {

@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static com.stubu.specdriven.testsupport.ViewTexts.text;
+import static com.stubu.specdriven.testsupport.ViewTexts.normalize;
 
 import com.stubu.specdriven.employee.EmployeeRepository;
 import com.stubu.specdriven.home.HomeView;
@@ -351,32 +353,11 @@ class UC003ViewDailyTimesheet extends SpringBrowserlessTest {
 
     private List<String> texts(Component scope, String className) {
         return find(Span.class).from(scope).all().stream().filter(span -> span.hasClassName(className))
-                .map(Span::getText).map(UC003ViewDailyTimesheet::normalize).toList();
+                .map(Span::getText).map(com.stubu.specdriven.testsupport.ViewTexts::normalize).toList();
     }
 
     private List<String> badges(Component scope) {
         return find(Badge.class).from(scope).all().stream().map(Badge::getText).toList();
     }
 
-    /** The visible text of a component tree; parts that are hidden are left out. */
-    private static String text(Component component) {
-        return normalize(text(component.getElement()));
-    }
-
-    private static String text(Element element) {
-        if (element.isTextNode()) {
-            return element.getText();
-        }
-        if (!element.isVisible()) {
-            return "";
-        }
-        StringBuilder text = new StringBuilder();
-        element.getChildren().forEach(child -> text.append(' ').append(text(child)));
-        return text.toString();
-    }
-
-    /** The time format separates the time from AM/PM with a narrow no-break space. */
-    private static String normalize(String text) {
-        return text.replace(' ', ' ').replace(' ', ' ');
-    }
 }

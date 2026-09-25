@@ -1,6 +1,10 @@
 package com.stubu.specdriven.admin;
 
+import static com.stubu.specdriven.base.TableCells.cell;
+
 import com.stubu.specdriven.audit.AuditAction;
+import com.stubu.specdriven.base.BrowserTimeZone;
+import com.stubu.specdriven.base.LoadErrorBox;
 import com.stubu.specdriven.base.MainLayout;
 import com.stubu.specdriven.security.EmployeePrincipal;
 import com.stubu.specdriven.timetracking.TimeEntryService;
@@ -71,9 +75,7 @@ public class AuditLogView extends VerticalLayout implements HasDynamicTitle, Loc
     private final Button reset = new Button();
     private final Anchor export = new Anchor();
     private final Div filters = new Div();
-    private final Div loadErrorBox = new Div();
-    private final Span loadError = new Span();
-    private final Button retry = new Button();
+    private final LoadErrorBox loadErrorBox = new LoadErrorBox(this::refresh);
     private final Div emptyHint = new Div();
     private final Span summary = new Span();
     private final Div list = new Div();
@@ -121,15 +123,6 @@ public class AuditLogView extends VerticalLayout implements HasDynamicTitle, Loc
         filters.add(from, to, user, entityType, action, buttons);
         filters.addClassName("audit-filters");
 
-        var errorIcon = VaadinIcon.WARNING.create();
-        errorIcon.getElement().setAttribute("aria-hidden", "true");
-        retry.setTestId("retry");
-        retry.addThemeVariants(ButtonVariant.PRIMARY);
-        retry.addClickListener(event -> refresh());
-        loadErrorBox.add(errorIcon, loadError, retry);
-        loadErrorBox.addClassNames("time-message", "time-message-error", "time-load-error");
-        loadErrorBox.getElement().setAttribute("role", "alert");
-        loadErrorBox.setVisible(false);
         emptyHint.addClassName("time-empty");
         emptyHint.setTestId("no-entries");
         summary.setTestId("audit-summary");
@@ -154,16 +147,9 @@ public class AuditLogView extends VerticalLayout implements HasDynamicTitle, Loc
     /** The browser's time zone decides how times are shown and what a day is in the date filter. */
     @Override
     protected void onAttach(AttachEvent attachEvent) {
-        attachEvent.getUI().getPage().retrieveExtendedClientDetails(details -> {
-            try {
-                ZoneId browserZone = ZoneId.of(details.getTimeZoneId());
-                if (!browserZone.equals(zone)) {
-                    zone = browserZone;
-                    refresh();
-                }
-            } catch (DateTimeException | NullPointerException unknownZone) {
-                log.debug("Keeping the server time zone, the browser reported {}", details.getTimeZoneId());
-            }
+        BrowserTimeZone.detect(attachEvent.getUI(), zone, browserZone -> {
+            zone = browserZone;
+            refresh();
         });
     }
 
@@ -252,9 +238,7 @@ public class AuditLogView extends VerticalLayout implements HasDynamicTitle, Loc
         reset.setText(getTranslation("audit.reset"));
         export.setText(getTranslation("audit.export"));
 
-        loadError.setText(getTranslation("audit.loadFailed"));
-        retry.setText(getTranslation("time.retry"));
-        loadErrorBox.setVisible(loadFailed);
+        loadErrorBox.update(loadFailed, getTranslation("audit.loadFailed"), getTranslation("time.retry"));
         filters.setVisible(!loadFailed);
         boolean hasRows = !loadFailed && result != null && !result.rows().isEmpty();
         emptyHint.setText(getTranslation(anyEntries ? "audit.noMatch" : "audit.none"));
@@ -317,16 +301,6 @@ public class AuditLogView extends VerticalLayout implements HasDynamicTitle, Loc
         row.setTestId("audit-row");
         row.getElement().setAttribute("role", "row");
         return row;
-    }
-
-    private static Span cell(String role, String text, String label) {
-        Span cell = new Span(text == null ? "" : text);
-        cell.addClassName("approval-cell");
-        cell.getElement().setAttribute("role", role);
-        if (label != null) {
-            cell.getElement().setAttribute("data-label", label);
-        }
-        return cell;
     }
 
     // --- one entry ---------------------------------------------------------------------------------
