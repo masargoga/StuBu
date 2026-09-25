@@ -73,6 +73,7 @@ Flyway migrations in `src/main/resources/db/migration` (portable SQL, identical 
 | `V4__timesheet_approval_and_public_holiday.sql` | approval columns, `public_holiday` |
 | `V5__optimistic_locking.sql` | `version` on `employee` and `public_holiday` |
 | `V6__audit_log_user_indexes.sql` | indexes for the audit log's user filter and the last login |
+| `db/vendor/postgresql/V7__audit_log_append_only.sql` | PostgreSQL only: triggers that refuse `UPDATE`, `DELETE` and `TRUNCATE` on `audit_log` |
 
 Query notes for large installations (about 10,000 employees): the employee list is searched, sorted and paged in the
 database (25 per page), the audit log is paged (25 per page), and the last login is read with an index on

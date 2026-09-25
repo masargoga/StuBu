@@ -46,8 +46,10 @@ The sample data includes a draft and a rejected timesheet of Alice, a submitted 
 | `prod` | as the default, plus structured JSON logs | the Docker image (`SPRING_PROFILES_ACTIVE=prod`) |
 
 The schema is owned by Flyway (`src/main/resources/db/migration`, `V1` to `V6`); Hibernate only validates it
-(`ddl-auto=validate`), so tests and development run exactly the migrations that production runs. Migrations must be
-portable SQL that runs unchanged on H2 and PostgreSQL. An applied migration is never edited; add a new one.
+(`ddl-auto=validate`), so tests and development run the migrations that production runs. Migrations must be portable
+SQL that runs unchanged on H2 and PostgreSQL. The one exception is `db/vendor/postgresql/V7__audit_log_append_only.sql`
+(triggers that make the audit log append-only), which Flyway reads only on PostgreSQL. An applied migration is never
+edited; add a new one.
 
 ### PostgreSQL
 
@@ -73,8 +75,8 @@ VALUES ('first.admin@example.com', 'First', 'Admin', 'ADMIN',
 
 The administrator then adds everybody else on the "Employees" page. Give the database user of the application only
 the rights it needs (`SELECT`, `INSERT`, `UPDATE`, `DELETE` on the tables; the schema is changed by Flyway, so run
-the migration with a more privileged user if you separate the two). Withhold `UPDATE` and `DELETE` on `audit_log` so
-the audit log is append-only in the database too.
+the migration with a more privileged user if you separate the two). Withhold `UPDATE` and `DELETE` on `audit_log`: on
+PostgreSQL triggers already refuse them, and the missing rights are a second barrier.
 
 ### Sign-in providers (OpenID Connect)
 

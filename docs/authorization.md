@@ -57,8 +57,9 @@ message, never as a stack trace.
 
 * Every change of employees, public holidays, time entries and timesheets, and every login, is written to the
   **audit log** in the same transaction as the change (who, when, what, old and new values, reason). The audit
-  repository offers no update or delete operation; production should also withhold `UPDATE` and `DELETE` on the table
-  from the application's database user.
+  repository offers no update or delete operation, and on PostgreSQL the database itself refuses `UPDATE`, `DELETE` and
+  `TRUNCATE` on the table (triggers, migration `V7`). Production should also withhold those rights from the application's
+  database user.
 * **Optimistic locking** (`version` columns) stops two people or two tabs from overwriting each other's changes:
   timesheets, time entries, employees and public holidays. The second save is refused with a message.
 * The session cookie is `HttpOnly`, `SameSite=Lax` and `Secure` (HTTPS only) in production.

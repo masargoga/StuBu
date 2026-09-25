@@ -32,8 +32,8 @@ Open <http://localhost:8080> and sign in through the mock identity provider with
 `dave.inactive@example.com`). Data lives in H2 in memory and is gone on restart.
 
 ```bash
-./mvnw -Dvaadin.skip=true test     # fast tests (no browser), about 280 tests
-./mvnw test -Pe2e                  # real-browser tests with Playwright (needs Chrome or Edge), about 130 tests
+./mvnw -Dvaadin.skip=true test     # fast tests (no browser), about 290 tests, 6 of them need Docker and are skipped without it
+./mvnw test -Pe2e                  # real-browser tests with Playwright (needs Chrome or Edge), about 136 tests
 ```
 
 ## Documentation

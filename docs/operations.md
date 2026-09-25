@@ -110,6 +110,13 @@ implications and a legal review first (spec.md section 32). `RetentionPolicy` re
 period, and the application logs the configured period at startup. Backups of the database are part of the retention
 concept as well and are the operator's responsibility.
 
+## Audit log protection
+
+The audit log is append-only. The application has no operation that changes or deletes an entry, and on PostgreSQL
+triggers (migration `V7`) refuse `UPDATE`, `DELETE` and `TRUNCATE`. Also withhold those rights from the application's database
+user. If a retention job ever has to remove old entries, it needs its own migration that deliberately replaces the
+triggers (and a legal and audit review first).
+
 ## Backup and restore
 
 All data is in PostgreSQL. Back it up with the tools of your platform (managed-database snapshots, `pg_dump`,

@@ -1,0 +1,58 @@
+# Continuous integration for GitHub Actions. It was written without a GitHub repository at hand, so check the first
+# run; the commands are the ones described in DEVELOPMENT.md.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests:
+    name: Fast tests (including PostgreSQL)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+      # Docker is available on the runner, so the PostgreSQL tests (Testcontainers) run as well.
+      - name: Test
+        run: ./mvnw -B -Dvaadin.skip=true test
+
+  browser-tests:
+    name: Browser tests (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+      # The tests drive the Chrome that is installed on the runner.
+      - name: Test
+        run: ./mvnw -B -Dvaadin.skip=true test -Pe2e
+      - name: Keep the screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots
+          path: target/e2e-screenshots
+
+  package:
+    name: Production build and Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+      - name: Package
+        run: ./mvnw -B package -DskipTests
+      - name: Docker image
+        run: docker build -t stubu:ci .
