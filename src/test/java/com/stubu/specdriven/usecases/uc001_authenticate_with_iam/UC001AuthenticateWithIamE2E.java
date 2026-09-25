@@ -108,6 +108,17 @@ class UC001AuthenticateWithIamE2E extends E2ETest {
     }
 
     @Test
+    void thePageLanguageFollowsTheLanguageOfTheBrowser() {
+        open(DESKTOP, "de-DE");
+        page.navigate(url("/login"));
+        page.waitForFunction("document.documentElement.lang === 'de'");
+
+        open(DESKTOP, "en-US");
+        page.navigate(url("/login"));
+        page.waitForFunction("document.documentElement.lang === 'en'");
+    }
+
+    @Test
     void anEmployeeDeactivatedWhileSignedInIsSentToTheLoginPage() {
         open(DESKTOP);
         signInAsAlice();

@@ -114,12 +114,17 @@ public abstract class E2ETest {
 
     /** Opens a fresh browser window (own cookies, so nobody is signed in) at the given size. */
     protected Page open(Viewport viewport) {
+        return open(viewport, "en-US");
+    }
+
+    /** Like {@link #open(Viewport)} for a browser with the given language, e.g. {@code de-DE}. */
+    protected Page open(Viewport viewport, String locale) {
         if (context != null) {
             context.close();
         }
         context = browser().newContext(new Browser.NewContextOptions()
                 .setViewportSize(viewport.width(), viewport.height())
-                .setLocale("en-US")
+                .setLocale(locale)
                 .setTimezoneId("UTC"));
         context.setDefaultTimeout(15_000);
         page = context.newPage();
