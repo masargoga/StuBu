@@ -4,8 +4,12 @@
 
 **Goal:** As a manager, I want to review and approve or reject employee timesheets so that working hours are officially recorded.
 
-**Status:** Pending
+**Status:** Implemented
 **Date:** 2024-01-15
+
+> A use case cannot be marked as **Implemented** unless all criteria in the use case implementation workflow are fulfilled.
+
+> **Revision:** Managers and administrators get an "Approvals" entry in the navigation. `/approvals` lists the submitted timesheets of the manager's direct reports, oldest submission first, as a table on wide screens and as cards on narrow ones (no bulk approval); "Review" opens `/approvals/review/{id}`, which shows the same timeline as the employee's month view, read-only, with the totals and the status. Who may review whom is decided by `ReviewerAuthorization`, independent of the pages: a manager reviews direct reports and everybody in their own department (spec section 6), an administrator everybody, nobody their own timesheet, and inactive users nobody. The list of the department-wide scope exists in the service, the switch to it is UC-010. A timesheet that does not exist and one the user may not review are answered the same way (AF-2: message and back to the list). Rejecting needs a reason (at most 1000 characters) and a ticked confirmation box. BR-04 is realized as in the state machine of `spec.md` section 18: the timesheet gets status REJECTED, shows the reason to the employee and can be corrected again (entries of a REJECTED timesheet are editable); resubmitting is UC-008. Approval and rejection are stored together with their audit entry (APPROVE/REJECT, reviewer, reason) in one transaction; two managers deciding at the same moment cannot both succeed. The employee is told by email (same `NotificationService` as UC-006: sent only when a mail server is configured, otherwise logged; a failing email never undoes the decision).
 
 ---
 
@@ -178,16 +182,16 @@ Manager navigates to the "Pending Approvals" view and clicks on an employee's su
 
 ## Tests
 
-- [ ] Main Flow Review covered (steps 1–3)
-- [ ] Main Flow Approve covered (steps 4–12)
-- [ ] Main Flow Reject covered (steps 13–22)
-- [ ] AF-1 (Wrong Status) covered
-- [ ] AF-2 (Permission Denied) covered
-- [ ] AF-3 (Cancel Rejection) covered
-- [ ] AF-4 (Cancel Approval) covered
-- [ ] AF-5 (Database Error Approve) covered
-- [ ] AF-6 (Database Error Reject) covered
-- [ ] BR-01–BR-06 covered
+- [x] Main Flow Review covered (steps 1–3)
+- [x] Main Flow Approve covered (steps 4–12)
+- [x] Main Flow Reject covered (steps 13–22)
+- [x] AF-1 (Wrong Status) covered
+- [x] AF-2 (Permission Denied) covered
+- [x] AF-3 (Cancel Rejection) covered
+- [x] AF-4 (Cancel Approval) covered
+- [x] AF-5 (Database Error Approve) covered
+- [x] AF-6 (Database Error Reject) covered
+- [x] BR-01–BR-06 covered
 
 ---
 

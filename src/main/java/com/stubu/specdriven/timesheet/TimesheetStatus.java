@@ -3,8 +3,8 @@ package com.stubu.specdriven.timesheet;
 public enum TimesheetStatus {
     DRAFT, SUBMITTED, APPROVED, REJECTED;
 
-    /** Time entries of a timesheet can only be corrected while it is a draft. */
+    /** Time entries can be corrected while the timesheet is a draft, and after a rejection to fix what was wrong. */
     public boolean allowsCorrections() {
-        return this == DRAFT;
+        return this == DRAFT || this == REJECTED;
     }
 }

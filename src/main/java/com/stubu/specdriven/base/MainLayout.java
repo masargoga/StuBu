@@ -1,5 +1,7 @@
 package com.stubu.specdriven.base;
 
+import com.stubu.specdriven.approval.ApprovalsView;
+import com.stubu.specdriven.employee.Role;
 import com.stubu.specdriven.home.HomeView;
 import com.stubu.specdriven.monthlytimesheet.MonthlyTimesheetView;
 import com.stubu.specdriven.security.EmployeePrincipal;
@@ -22,7 +24,7 @@ import jakarta.annotation.security.PermitAll;
 
 /**
  * Application shell for authenticated users: title, who is signed in, sign out, and the navigation drawer
- * (Today, My Timesheet; managers and administrators get more entries with their use cases).
+ * (Today, My Timesheet, and Approvals for managers and administrators).
  */
 @PermitAll
 public class MainLayout extends AppLayout implements LocaleChangeObserver {
@@ -33,6 +35,8 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
     private final SideNavItem today = new SideNavItem("", HomeView.class, VaadinIcon.CLOCK.create());
     private final SideNavItem timesheet = new SideNavItem("", MonthlyTimesheetView.class,
             VaadinIcon.CALENDAR.create());
+    private final SideNavItem approvals = new SideNavItem("", ApprovalsView.class,
+            VaadinIcon.CHECK_SQUARE_O.create());
     private final DrawerToggle drawerToggle = new DrawerToggle();
 
     public MainLayout(AuthenticationContext authenticationContext) {
@@ -41,6 +45,10 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
         HorizontalLayout user = new HorizontalLayout();
         user.addClassName("app-user");
         user.setAlignItems(FlexComponent.Alignment.CENTER);
+        boolean reviewer = authenticationContext.getAuthenticatedUser(Object.class)
+                .filter(EmployeePrincipal.class::isInstance).map(EmployeePrincipal.class::cast)
+                .map(EmployeePrincipal::getRole).filter(role -> role == Role.MANAGER || role == Role.ADMIN)
+                .isPresent();
         authenticationContext.getAuthenticatedUser(Object.class).ifPresent(principal -> {
             String name = principal instanceof EmployeePrincipal employee ? employee.getFullName()
                     : authenticationContext.getPrincipalName().orElse("");
@@ -65,7 +73,11 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
 
         today.setTestId("nav-today");
         timesheet.setTestId("nav-timesheet");
+        approvals.setTestId("nav-approvals");
         navigation.addItem(today, timesheet);
+        if (reviewer) {
+            navigation.addItem(approvals);
+        }
         navigation.addClassName("app-navigation");
         addToDrawer(new Scroller(navigation));
     }
@@ -76,6 +88,7 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
         signOut.setText(getTranslation("app.signOut"));
         today.setLabel(getTranslation("nav.today"));
         timesheet.setLabel(getTranslation("nav.timesheet"));
+        approvals.setLabel(getTranslation("nav.approvals"));
         navigation.getElement().setAttribute("aria-label", getTranslation("nav.label"));
         drawerToggle.setAriaLabel(getTranslation("nav.toggle"));
     }

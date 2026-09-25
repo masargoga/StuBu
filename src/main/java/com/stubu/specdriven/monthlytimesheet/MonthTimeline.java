@@ -28,6 +28,7 @@ public class MonthTimeline extends Div {
 
     private static final int[] AXIS_HOURS = { 0, 4, 8, 12, 16, 20, 24 };
 
+    private boolean readOnly;
     private SerializableConsumer<Long> editHandler = id -> {
     };
     private SerializableConsumer<Long> deleteHandler = id -> {
@@ -35,6 +36,11 @@ public class MonthTimeline extends Div {
 
     public MonthTimeline() {
         addClassName("month-timeline");
+    }
+
+    /** A read-only timeline never offers Edit or Delete, whatever the status of the timesheet (manager review). */
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
     }
 
     /** What happens when the user chooses Edit or Delete on a work period; called with the entry's id. */
@@ -61,7 +67,7 @@ public class MonthTimeline extends Div {
         rows.addClassName("month-rows");
         rows.getElement().setAttribute("role", "list");
         rows.getElement().setAttribute("aria-label", getTranslation("timesheet.timeline.label"));
-        sheet.days().forEach(line -> rows.add(row(line, sheet.editable(), zone, now, today, locale)));
+        sheet.days().forEach(line -> rows.add(row(line, sheet.editable() && !readOnly, zone, now, today, locale)));
         add(axis, rows);
     }
 

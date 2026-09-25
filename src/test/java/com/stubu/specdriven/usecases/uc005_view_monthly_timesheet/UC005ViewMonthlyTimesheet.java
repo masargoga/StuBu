@@ -408,14 +408,18 @@ class UC005ViewMonthlyTimesheet extends SpringBrowserlessTest {
         assertEquals(1, buttons("edit-entry").size(), "Draft: editable");
         assertEquals(1, buttons("delete-entry").size());
 
-        for (TimesheetStatus status : List.of(TimesheetStatus.SUBMITTED, TimesheetStatus.APPROVED,
-                TimesheetStatus.REJECTED)) {
+        for (TimesheetStatus status : List.of(TimesheetStatus.SUBMITTED, TimesheetStatus.APPROVED)) {
             setStatus(status);
             MonthlyTimesheetView view = openSheet(null);
             assertEquals(0, buttons("edit-entry").size(), status + ": view only");
             assertEquals(0, buttons("delete-entry").size(), status + ": view only");
             assertTrue(text(view).contains("cannot be edited because it has been submitted"), text(view));
         }
+        setStatus(TimesheetStatus.REJECTED); // sent back to be corrected (UC-007)
+        MonthlyTimesheetView rejected = openSheet(null);
+        assertEquals(1, buttons("edit-entry").size(), "Rejected: editable again");
+        assertEquals(1, buttons("delete-entry").size());
+        assertFalse(text(rejected).contains("cannot be edited"), text(rejected));
     }
 
     @Test

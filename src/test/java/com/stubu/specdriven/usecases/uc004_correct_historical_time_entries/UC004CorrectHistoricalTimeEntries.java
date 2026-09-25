@@ -331,18 +331,29 @@ class UC004CorrectHistoricalTimeEntries extends SpringBrowserlessTest {
     }
 
     @Test
-    void af3_approvedAndRejectedTimesheetsAreLockedToo() {
+    void af3_anApprovedTimesheetIsLockedToo() {
         TimeEntry entry = record("2026-09-23T08:00:00Z", "2026-09-23T12:00:00Z");
-        for (TimesheetStatus status : List.of(TimesheetStatus.APPROVED, TimesheetStatus.REJECTED)) {
-            jdbc.update("delete from timesheet");
-            timesheets.save(new Timesheet(alice, YearMonth.of(2026, 9), status));
+        timesheets.save(new Timesheet(alice, YearMonth.of(2026, 9), TimesheetStatus.APPROVED));
 
-            assertEquals(status, assertThrows(EntryLockedException.class, () -> service.correct(alice, entry.getId(),
-                    entry.getCheckInAt(), Instant.parse("2026-09-23T11:00:00Z"), null, UTC)).getStatus());
-            assertThrows(EntryLockedException.class, () -> service.delete(alice, entry.getId(), null, UTC));
-        }
+        assertEquals(TimesheetStatus.APPROVED, assertThrows(EntryLockedException.class, () -> service.correct(
+                alice, entry.getId(), entry.getCheckInAt(), Instant.parse("2026-09-23T11:00:00Z"), null, UTC))
+                .getStatus());
+        assertThrows(EntryLockedException.class, () -> service.delete(alice, entry.getId(), null, UTC));
         assertEquals(1, timeEntries.count(), "Nothing was changed or deleted");
         assertEquals(Instant.parse("2026-09-23T12:00:00Z"), timeEntries.findAll().getFirst().getCheckOutAt());
+    }
+
+    /** A rejected timesheet is sent back to the employee to be corrected (UC-007). */
+    @Test
+    void af3_aRejectedTimesheetCanBeCorrected() {
+        TimeEntry entry = record("2026-09-23T08:00:00Z", "2026-09-23T12:00:00Z");
+        timesheets.save(new Timesheet(alice, YearMonth.of(2026, 9), TimesheetStatus.REJECTED));
+
+        service.correct(alice, entry.getId(), entry.getCheckInAt(), Instant.parse("2026-09-23T11:00:00Z"), null,
+                UTC);
+        assertEquals(Instant.parse("2026-09-23T11:00:00Z"), timeEntries.findAll().getFirst().getCheckOutAt());
+        service.delete(alice, entry.getId(), null, UTC);
+        assertEquals(0, timeEntries.count());
     }
 
     @Test

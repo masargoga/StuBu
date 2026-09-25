@@ -233,7 +233,7 @@ class UC006SubmitTimesheet extends SpringBrowserlessTest {
         MonthlyTimesheetView view = openSheet("2026-09");
         assertFalse(button("submit-timesheet").isEnabled(), "A rejected timesheet is resubmitted with UC-008");
         assertEquals("Edit & resubmit", button("submit-timesheet").getText());
-        assertTrue(text(view).contains("cannot be edited"), text(view));
+        assertTrue(text(view).contains("not available yet"), text(view));
     }
 
     @Test

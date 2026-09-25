@@ -1,6 +1,8 @@
 package com.stubu.specdriven.notification;
 
 import com.stubu.specdriven.base.TranslationProvider;
+import java.time.Instant;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
@@ -43,24 +45,51 @@ public class EmailNotificationService implements NotificationService {
 
     @Override
     public void timesheetSubmitted(TimesheetSubmittedNotice notice) {
-        String month = notice.period().getMonth().getDisplayName(TextStyle.FULL_STANDALONE, locale) + " "
-                + notice.period().getYear();
-        String submittedOn = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(locale)
-                .withZone(zone).format(notice.submittedAt());
+        String month = monthLabel(notice.period());
         String subject = translations.getTranslation("mail.submitted.subject", locale, notice.employeeName(), month);
-        String body = translations.getTranslation("mail.submitted.body", locale, notice.recipientName(),
-                notice.employeeName(), month, submittedOn);
+        String text = translations.getTranslation("mail.submitted.body", locale, notice.recipientName(),
+                notice.employeeName(), month, dateTime(notice.submittedAt()));
+        send(notice.recipientEmail(), subject, text);
+    }
 
+    @Override
+    public void timesheetApproved(TimesheetDecisionNotice notice) {
+        String month = monthLabel(notice.period());
+        String subject = translations.getTranslation("mail.approved.subject", locale, month);
+        String text = translations.getTranslation("mail.approved.body", locale, notice.recipientName(), month,
+                notice.reviewerName(), dateTime(notice.decidedAt()));
+        send(notice.recipientEmail(), subject, text);
+    }
+
+    @Override
+    public void timesheetRejected(TimesheetDecisionNotice notice) {
+        String month = monthLabel(notice.period());
+        String subject = translations.getTranslation("mail.rejected.subject", locale, month);
+        String text = translations.getTranslation("mail.rejected.body", locale, notice.recipientName(), month,
+                notice.reviewerName(), dateTime(notice.decidedAt()), notice.reason());
+        send(notice.recipientEmail(), subject, text);
+    }
+
+    private String monthLabel(YearMonth period) {
+        return period.getMonth().getDisplayName(TextStyle.FULL_STANDALONE, locale) + " " + period.getYear();
+    }
+
+    private String dateTime(Instant instant) {
+        return DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(locale).withZone(zone)
+                .format(instant);
+    }
+
+    private void send(String recipient, String subject, String text) {
         JavaMailSender sender = mailSender.getIfAvailable();
         if (sender == null) {
-            log.info("No mail server configured, not sending: \"{}\" to {}", subject, notice.recipientEmail());
+            log.info("No mail server configured, not sending: \"{}\" to {}", subject, recipient);
             return;
         }
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);
-        message.setTo(notice.recipientEmail());
+        message.setTo(recipient);
         message.setSubject(subject);
-        message.setText(body);
+        message.setText(text);
         sender.send(message);
     }
 }

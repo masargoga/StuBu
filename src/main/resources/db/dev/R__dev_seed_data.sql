@@ -47,3 +47,27 @@ SELECT e.id,
        DATEADD('HOUR', 17, CAST(DATEADD('DAY', r.x, DATEADD('MONTH', -1, DATE_TRUNC('MONTH', CURRENT_DATE))) AS TIMESTAMP WITH TIME ZONE)),
        NULL, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 FROM employee e, system_range(7, 9) AS r(x) WHERE e.email = 'alice.employee@example.com';
+
+-- Erik reports to Bob and has submitted last month's timesheet, so Bob has something to review.
+INSERT INTO employee (email, first_name, last_name, role, manager_id, department_id, is_active, created_at, updated_at)
+SELECT 'erik.employee@example.com', 'Erik', 'Employee', 'EMPLOYEE', b.id, d.id, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM department d, employee b WHERE d.name = 'Engineering' AND b.email = 'bob.manager@example.com';
+
+INSERT INTO time_entry (employee_id, check_in_at, check_out_at, open_employee_id, version, created_at, updated_at)
+SELECT e.id,
+       DATEADD('HOUR', 8, CAST(DATEADD('DAY', r.x, DATEADD('MONTH', -1, DATE_TRUNC('MONTH', CURRENT_DATE))) AS TIMESTAMP WITH TIME ZONE)),
+       DATEADD('HOUR', 12, CAST(DATEADD('DAY', r.x, DATEADD('MONTH', -1, DATE_TRUNC('MONTH', CURRENT_DATE))) AS TIMESTAMP WITH TIME ZONE)),
+       NULL, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM employee e, system_range(2, 6) AS r(x) WHERE e.email = 'erik.employee@example.com';
+
+INSERT INTO time_entry (employee_id, check_in_at, check_out_at, open_employee_id, version, created_at, updated_at)
+SELECT e.id,
+       DATEADD('MINUTE', 750, CAST(DATEADD('DAY', r.x, DATEADD('MONTH', -1, DATE_TRUNC('MONTH', CURRENT_DATE))) AS TIMESTAMP WITH TIME ZONE)),
+       DATEADD('MINUTE', 1050, CAST(DATEADD('DAY', r.x, DATEADD('MONTH', -1, DATE_TRUNC('MONTH', CURRENT_DATE))) AS TIMESTAMP WITH TIME ZONE)),
+       NULL, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM employee e, system_range(2, 6) AS r(x) WHERE e.email = 'erik.employee@example.com';
+
+INSERT INTO timesheet (employee_id, period_year, period_month, status, submitted_at, version, created_at, updated_at)
+SELECT e.id, YEAR(DATEADD('MONTH', -1, CURRENT_DATE)), MONTH(DATEADD('MONTH', -1, CURRENT_DATE)), 'SUBMITTED',
+       CURRENT_TIMESTAMP, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM employee e WHERE e.email = 'erik.employee@example.com';

@@ -134,6 +134,29 @@ public class Timesheet {
         submittedAt = at;
     }
 
+    /** A manager approves a submitted timesheet; from now on it can no longer be changed. */
+    public void approve(Instant at, Long reviewerId) {
+        requireSubmitted();
+        status = TimesheetStatus.APPROVED;
+        approvedAt = at;
+        approvedBy = reviewerId;
+    }
+
+    /** A manager sends a submitted timesheet back, with the reason, so the employee can correct it. */
+    public void reject(Instant at, Long reviewerId, String reason) {
+        requireSubmitted();
+        status = TimesheetStatus.REJECTED;
+        rejectedAt = at;
+        rejectedBy = reviewerId;
+        rejectionReason = reason;
+    }
+
+    private void requireSubmitted() {
+        if (status != TimesheetStatus.SUBMITTED) {
+            throw new IllegalStateException("Only a submitted timesheet can be reviewed, but the status is " + status);
+        }
+    }
+
     public void setStatus(TimesheetStatus status) {
         this.status = status;
     }

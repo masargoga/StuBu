@@ -94,7 +94,7 @@ Employee clicks "Edit" or "Delete" on a time entry in the timeline or daily view
 ### AF-3: Timesheet Already Submitted
 
 **Branches from:** Preconditions
-**Condition:** The TimeEntry belongs to a Timesheet with status SUBMITTED, APPROVED, or REJECTED
+**Condition:** The TimeEntry belongs to a Timesheet with status SUBMITTED or APPROVED (a REJECTED timesheet is sent back to the employee, who can correct it again, see UC-007)
 
 1. System disables "Edit" and "Delete" buttons for that entry.
 2. System displays a message with the entry: "This entry cannot be edited because the timesheet has been submitted. Wait for approval or rejection before making changes."

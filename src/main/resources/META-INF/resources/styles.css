@@ -651,3 +651,91 @@ vaadin-grid::part(holiday-cell) {
   padding-inline: var(--vaadin-padding-l);
   font-size: var(--aura-font-size-xl);
 }
+
+/* UC-007: manager approvals */
+/* The list of pending approvals: aligned columns on wide screens, one card per timesheet on narrow ones. */
+.approvals-list {
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vaadin-gap-s);
+  font-size: var(--aura-font-size-l);
+}
+
+.approval-head,
+.approval-row {
+  display: grid;
+  grid-template-columns: 2fr 2fr 2fr 8rem;
+  align-items: center;
+  gap: var(--vaadin-gap-m);
+  padding: var(--vaadin-padding-s) var(--vaadin-padding-m);
+}
+
+.approval-head {
+  color: var(--vaadin-text-color-secondary);
+  font-weight: var(--aura-font-weight-medium);
+}
+
+.approval-row {
+  border: 1px solid var(--vaadin-border-color-secondary);
+  border-radius: var(--vaadin-radius-m);
+  background: var(--vaadin-background-container);
+}
+
+.approval-employee {
+  font-weight: var(--aura-font-weight-semibold);
+}
+
+@media (max-width: 640px) {
+  .approval-head {
+    display: none;
+  }
+
+  .approval-row {
+    grid-template-columns: 1fr;
+    gap: var(--vaadin-gap-xs);
+    padding: var(--vaadin-padding-m);
+  }
+
+  .approval-employee {
+    font-size: var(--aura-font-size-xl);
+  }
+
+  .approval-cell[data-label]::before {
+    content: attr(data-label) ": ";
+    color: var(--vaadin-text-color-secondary);
+  }
+
+  .approval-row .review-button {
+    width: 100%;
+    margin-top: var(--vaadin-gap-xs);
+  }
+}
+
+.review-button {
+  min-height: 2.75rem;
+  font-size: var(--aura-font-size-l);
+}
+
+.review-view .status-actions vaadin-button {
+  min-width: 12rem;
+}
+
+.time-dialog-subject {
+  margin: 0;
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-l);
+}
+
+.review-view > vaadin-button {
+  align-self: flex-start;
+  font-size: var(--aura-font-size-l);
+}
+
+.review-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vaadin-gap-m);
+  padding-bottom: var(--vaadin-padding-xs);
+}
