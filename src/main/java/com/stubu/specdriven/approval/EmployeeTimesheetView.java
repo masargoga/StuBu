@@ -106,7 +106,17 @@ public class EmployeeTimesheetView extends VerticalLayout implements HasUrlParam
 
         back.setTestId("back");
         back.addThemeVariants(ButtonVariant.TERTIARY);
-        back.addClickListener(event -> getUI().ifPresent(ui -> ui.navigate(EmployeesView.class)));
+        // Administrators come from an employee's details, managers from their list of employees.
+        boolean administrator = authenticationContext.getAuthenticatedUser(Object.class)
+                .filter(EmployeePrincipal.class::isInstance).map(EmployeePrincipal.class::cast)
+                .map(EmployeePrincipal::getRole).filter(role -> role == com.stubu.specdriven.employee.Role.ADMIN).isPresent();
+        back.addClickListener(event -> getUI().ifPresent(ui -> {
+            if (administrator) {
+                ui.getPage().getHistory().back();
+            } else {
+                ui.navigate(EmployeesView.class);
+            }
+        }));
         roleBadge.setTestId("role-badge");
         HorizontalLayout title = new HorizontalLayout(heading, roleBadge);
         title.setAlignItems(FlexComponent.Alignment.CENTER);

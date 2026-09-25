@@ -76,6 +76,10 @@ public class Employee {
         updatedAt = Instant.now();
     }
 
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
     public Long getId() {
         return id;
     }

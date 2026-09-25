@@ -4,8 +4,12 @@
 
 **Goal:** As an administrator, I want to view all employee records and their timesheets so that I have complete organizational visibility.
 
-**Status:** Pending
+**Status:** Implemented
 **Date:** 2024-01-15
+
+> A use case cannot be marked as **Implemented** unless all criteria in the use case implementation workflow are fulfilled.
+
+> **Revision:** The "Employees" page of the administrator (`/admin/employees`, also the page of UC-011) is the list of this use case: all employees, active and inactive, with name, email, role, manager, department, status and the last login (the time of the latest successful login in the audit log, or "Never"). It is searched by a part of the name, email address or department, filtered by status, role and department (the filters combine), and sorted by any of those columns in either direction with the "Sort by" drop-down and the direction button (the sort control works the same on narrow screens, where the table becomes cards). Text search and filters are not case-sensitive (BR-05). "Details" opens `/admin/employees/details/{id}`: the full record (name, email, role, manager, department, created, last login, status) and all timesheets of the employee, latest month first, with status, submission and decision times and the rejection reason. "Open" shows a timesheet in the read-only timesheet view of UC-009 (days, totals, history with comments, single days); an administrator can look but never decides there. Messages: "No employees found.", "No employees match your filters.", "No timesheets found for this employee." and "Unable to load data. Please try again." with a retry. Nothing on these pages changes data (BR-04); editing is UC-011.
 
 ---
 
@@ -133,13 +137,13 @@ Administrator navigates to the "Employees & Timesheets" or "Admin Dashboard" vie
 
 ## Tests
 
-- [ ] Main Flow View Employees covered (steps 1–6)
-- [ ] Main Flow View Details covered (steps 7–12)
-- [ ] AF-1 (No Employees) covered
-- [ ] AF-2 (No Search Results) covered
-- [ ] AF-3 (No Timesheets) covered
-- [ ] AF-4 (Database Error) covered
-- [ ] BR-01–BR-05 covered
+- [x] Main Flow View Employees covered (steps 1–6)
+- [x] Main Flow View Details covered (steps 7–12)
+- [x] AF-1 (No Employees) covered
+- [x] AF-2 (No Search Results) covered
+- [x] AF-3 (No Timesheets) covered
+- [x] AF-4 (Database Error) covered
+- [x] BR-01–BR-05 covered
 
 ---
 

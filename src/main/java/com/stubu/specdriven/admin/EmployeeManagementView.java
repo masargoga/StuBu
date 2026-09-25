@@ -1,12 +1,17 @@
 package com.stubu.specdriven.admin;
 
-import com.stubu.specdriven.approval.EmployeeTimesheetView;
 import com.stubu.specdriven.base.MainLayout;
 import com.stubu.specdriven.employee.Choice;
 import com.stubu.specdriven.employee.DeactivationRefusedException;
 import com.stubu.specdriven.employee.EmployeeAdminService;
 import com.stubu.specdriven.employee.EmployeeNotFoundException;
 import com.stubu.specdriven.employee.EmployeeRow;
+import com.stubu.specdriven.employee.Role;
+import com.stubu.specdriven.timetracking.TimeEntryService;
+import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.select.Select;
+import com.stubu.specdriven.admin.EmployeeOverviewService.Query;
+import com.stubu.specdriven.admin.EmployeeOverviewService.Sort;
 import com.stubu.specdriven.security.EmployeePrincipal;
 import com.vaadin.flow.component.badge.Badge;
 import com.vaadin.flow.component.badge.BadgeVariant;
@@ -29,6 +34,11 @@ import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.RolesAllowed;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.DateTimeException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +60,13 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
     }
 
     private final transient EmployeeAdminService service;
+    private final transient EmployeeOverviewService overview;
+    private final transient TimeEntryService entryService;
     private final Long adminId;
+    private ZoneId zone;
+    private boolean anyEmployees = true;
+    private boolean ascending = true;
+    private boolean updatingFilters;
     private transient List<EmployeeRow> employees = List.of();
     private transient List<Choice> departments = List.of();
     private transient List<Choice> managers = List.of();
@@ -64,11 +80,22 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
     private final Span loadError = new Span();
     private final Button retry = new Button();
     private final TextField search = new TextField();
+    private final Select<Boolean> status = new Select<>();
+    private final Select<Role> role = new Select<>();
+    private final Select<Choice> department = new Select<>();
+    private final Select<Sort> sort = new Select<>();
+    private final Button direction = new Button();
+    private final Div filters = new Div();
+    private final Span count = new Span();
     private final Div emptyHint = new Div();
     private final Div list = new Div();
 
-    public EmployeeManagementView(AuthenticationContext authenticationContext, EmployeeAdminService service) {
+    public EmployeeManagementView(AuthenticationContext authenticationContext, EmployeeAdminService service,
+            EmployeeOverviewService overview, TimeEntryService entryService) {
         this.service = service;
+        this.overview = overview;
+        this.entryService = entryService;
+        this.zone = entryService.defaultZone();
         this.adminId = authenticationContext.getAuthenticatedUser(Object.class)
                 .filter(EmployeePrincipal.class::isInstance).map(EmployeePrincipal.class::cast)
                 .map(EmployeePrincipal::getEmployeeId).orElse(null);
@@ -96,18 +123,74 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
         search.setClearButtonVisible(true);
         search.setPrefixComponent(VaadinIcon.SEARCH.create());
         search.setValueChangeMode(ValueChangeMode.LAZY);
-        search.setWidthFull();
-        search.setMaxWidth("28rem");
         search.addClassName("manage-search");
-        search.addValueChangeListener(event -> render());
+        search.addValueChangeListener(event -> filterChanged());
+        status.setTestId("filter-status");
+        status.setEmptySelectionAllowed(true);
+        status.setItems(Boolean.TRUE, Boolean.FALSE);
+        status.setItemLabelGenerator(value -> value == null ? getTranslation("manage.filter.all")
+                : getTranslation(value ? "manage.active" : "manage.inactive"));
+        status.addValueChangeListener(event -> filterChanged());
+        role.setTestId("filter-role");
+        role.setEmptySelectionAllowed(true);
+        role.setItems(Role.values());
+        role.setItemLabelGenerator(value -> value == null ? getTranslation("manage.filter.all")
+                : getTranslation("role." + value.name()));
+        role.addValueChangeListener(event -> filterChanged());
+        department.setTestId("filter-department");
+        department.setEmptySelectionAllowed(true);
+        department.setItemLabelGenerator(value -> value == null ? getTranslation("manage.filter.all") : value.label());
+        department.addValueChangeListener(event -> filterChanged());
+        sort.setTestId("sort-by");
+        sort.setItems(Sort.values());
+        sort.setValue(Sort.NAME);
+        sort.setItemLabelGenerator(value -> getTranslation("manage.sort." + value.name()));
+        sort.addValueChangeListener(event -> filterChanged());
+        direction.setTestId("sort-direction");
+        direction.addThemeVariants(ButtonVariant.TERTIARY);
+        direction.addClickListener(event -> {
+            ascending = !ascending;
+            filterChanged();
+        });
+        filters.add(search, status, role, department, sort, direction);
+        filters.addClassName("manage-filters");
+        count.setTestId("employee-count");
+        count.addClassName("audit-summary");
         emptyHint.addClassName("time-empty");
         emptyHint.setTestId("no-employees");
         list.addClassNames("approvals-list", "manage-list");
         list.setTestId("employees");
         list.getElement().setAttribute("role", "table");
 
-        add(heading, add, messageBox, loadErrorBox, search, emptyHint, list);
+        add(heading, add, messageBox, loadErrorBox, filters, count, emptyHint, list);
         load();
+    }
+
+    /** The browser's time zone decides how the last login times are shown. */
+    @Override
+    protected void onAttach(AttachEvent attachEvent) {
+        attachEvent.getUI().getPage().retrieveExtendedClientDetails(details -> {
+            try {
+                ZoneId browserZone = ZoneId.of(details.getTimeZoneId());
+                if (!browserZone.equals(zone)) {
+                    zone = browserZone;
+                    render();
+                }
+            } catch (DateTimeException | NullPointerException unknownZone) {
+                log.debug("Keeping the server time zone, the browser reported {}", details.getTimeZoneId());
+            }
+        });
+    }
+
+    private void filterChanged() {
+        if (!updatingFilters) {
+            refresh();
+        }
+    }
+
+    private Query query() {
+        return new Query(search.getValue(), status.getValue(), role.getValue(),
+                department.getValue() == null ? null : department.getValue().id(), sort.getValue(), ascending);
     }
 
     public void refresh() {
@@ -120,7 +203,9 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
             return;
         }
         try {
-            employees = service.list(adminId);
+            Query query = query();
+            employees = overview.search(adminId, query);
+            anyEmployees = query.isFiltered() ? !overview.search(adminId, Query.ALL).isEmpty() : !employees.isEmpty();
             departments = service.departments(adminId);
             managers = service.managerCandidates(adminId);
             loadFailed = false;
@@ -146,7 +231,21 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
         heading.setText(getTranslation("manage.title"));
         add.setText(getTranslation("manage.add"));
         search.setLabel(getTranslation("employees.search"));
-        search.setPlaceholder(getTranslation("employees.search.placeholder"));
+        search.setPlaceholder(getTranslation("manage.search.placeholder"));
+        updatingFilters = true;
+        status.setLabel(getTranslation("manage.status"));
+        status.setEmptySelectionCaption(getTranslation("manage.filter.all"));
+        role.setLabel(getTranslation("employees.role"));
+        role.setEmptySelectionCaption(getTranslation("manage.filter.all"));
+        Choice chosen = department.getValue();
+        department.setLabel(getTranslation("manage.department"));
+        department.setEmptySelectionCaption(getTranslation("manage.filter.all"));
+        department.setItems(departments);
+        department.setValue(chosen != null && departments.contains(chosen) ? chosen : null);
+        sort.setLabel(getTranslation("manage.sort"));
+        direction.setIcon((ascending ? VaadinIcon.ARROW_UP : VaadinIcon.ARROW_DOWN).create());
+        direction.setText(getTranslation(ascending ? "manage.sort.ascending" : "manage.sort.descending"));
+        updatingFilters = false;
 
         if (message == null) {
             messageBox.setVisible(false);
@@ -164,13 +263,12 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
         retry.setText(getTranslation("time.retry"));
         loadErrorBox.setVisible(loadFailed);
         add.setEnabled(!loadFailed);
-        search.setVisible(!loadFailed);
+        filters.setVisible(!loadFailed);
 
-        String query = search.getValue() == null ? "" : search.getValue().strip().toLowerCase(Locale.ROOT);
-        List<EmployeeRow> shown = employees.stream().filter(employee -> query.isEmpty()
-                || employee.fullName().toLowerCase(Locale.ROOT).contains(query)
-                || employee.email().toLowerCase(Locale.ROOT).contains(query)).toList();
-        emptyHint.setText(getTranslation(employees.isEmpty() ? "manage.none" : "employees.noMatch"));
+        List<EmployeeRow> shown = employees;
+        count.setText(getTranslation("manage.count", shown.size()));
+        count.setVisible(!loadFailed && !shown.isEmpty());
+        emptyHint.setText(getTranslation(anyEmployees ? "manage.noMatch" : "manage.none"));
         emptyHint.setVisible(!loadFailed && shown.isEmpty());
         list.setVisible(!loadFailed && !shown.isEmpty());
         if (!list.isVisible()) {
@@ -185,6 +283,7 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
                 cell("columnheader", getTranslation("manage.department"), null),
                 cell("columnheader", getTranslation("manage.manager"), null),
                 cell("columnheader", getTranslation("manage.status"), null),
+                cell("columnheader", getTranslation("manage.lastLogin"), null),
                 cell("columnheader", getTranslation("approvals.action"), null));
         head.addClassName("approval-head");
         head.getElement().setAttribute("role", "row");
@@ -211,10 +310,10 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
         Button edit = action("manage.edit", "edit-employee", employee, ButtonVariant.PRIMARY);
         edit.addClickListener(event -> openForm(employee));
         actions.add(edit);
-        Button timesheets = action("manage.timesheets", "employee-timesheets", employee, ButtonVariant.TERTIARY);
-        timesheets.addClickListener(event -> getUI().ifPresent(ui -> ui.navigate(EmployeeTimesheetView.class,
+        Button details = action("manage.details", "employee-details", employee, ButtonVariant.TERTIARY);
+        details.addClickListener(event -> getUI().ifPresent(ui -> ui.navigate(EmployeeDetailView.class,
                 employee.id())));
-        actions.add(timesheets);
+        actions.add(details);
         if (employee.active()) {
             Button deactivate = action("manage.deactivate", "deactivate-employee", employee, ButtonVariant.ERROR,
                     ButtonVariant.TERTIARY);
@@ -228,12 +327,17 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
                 cell("cell", employee.departmentName(), getTranslation("manage.department")),
                 cell("cell", employee.managerName() == null ? getTranslation("manage.manager.none")
                         : employee.managerName(), getTranslation("manage.manager")),
-                statusCell, actions);
+                statusCell, cell("cell", lastLogin(employee.lastLoginAt()), getTranslation("manage.lastLogin")), actions);
         row.addClassNames("approval-row", "manage-row");
         row.setClassName("employee-inactive", !employee.active());
         row.setTestId("manage-row");
         row.getElement().setAttribute("role", "row");
         return row;
+    }
+
+    private String lastLogin(Instant at) {
+        return at == null ? getTranslation("manage.lastLogin.never") : DateTimeFormatter.ofLocalizedDateTime(
+                FormatStyle.MEDIUM).withLocale(getLocale()).withZone(zone).format(at);
     }
 
     private Button action(String key, String testId, EmployeeRow employee, ButtonVariant... variants) {

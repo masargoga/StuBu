@@ -826,7 +826,7 @@ vaadin-grid::part(holiday-cell) {
 .manage-head,
 .manage-view .approval-head,
 .manage-view .approval-row {
-  grid-template-columns: 1.5fr 2.4fr 1.1fr 1.4fr 1.6fr 0.9fr 25rem;
+  grid-template-columns: 1.4fr 2.2fr 1fr 1.2fr 1.4fr 0.8fr 1.5fr 21rem;
 }
 
 .manage-actions {
@@ -842,7 +842,7 @@ vaadin-grid::part(holiday-cell) {
   color: var(--vaadin-text-color-secondary);
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1500px) {
   .manage-view .approval-head {
     display: none;
   }
@@ -1018,4 +1018,94 @@ vaadin-grid::part(holiday-cell) {
   .audit-view .approval-cell[data-label]:empty {
     display: none;
   }
+}
+
+/* UC-014: employee list filters and details */
+.manage-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--vaadin-gap-m);
+}
+
+.manage-filters vaadin-text-field {
+  width: 20rem;
+}
+
+.manage-filters vaadin-select {
+  width: 12rem;
+}
+
+.manage-filters vaadin-button {
+  min-height: 2.75rem;
+  font-size: var(--aura-font-size-l);
+}
+
+.manage-view vaadin-select {
+  --vaadin-input-field-value-font-size: var(--aura-font-size-l);
+  --vaadin-input-field-label-font-size: var(--aura-font-size-l);
+}
+
+.detail-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--vaadin-gap-m);
+  padding: var(--vaadin-padding-m);
+  border: 1px solid var(--vaadin-border-color-secondary);
+  border-radius: var(--vaadin-radius-m);
+  background: var(--vaadin-background-container);
+}
+
+.detail-value {
+  display: block;
+  font-size: var(--aura-font-size-l);
+  overflow-wrap: anywhere;
+}
+
+.detail-view h3 {
+  margin: var(--vaadin-gap-m) 0 0;
+  font-size: var(--aura-font-size-xl);
+}
+
+.detail-view .approval-head,
+.detail-view .approval-row {
+  grid-template-columns: 1.4fr 1fr 1.6fr 1.6fr 2.4fr 7rem;
+}
+
+.detail-view > vaadin-button {
+  align-self: flex-start;
+  font-size: var(--aura-font-size-l);
+}
+
+@media (max-width: 900px) {
+  .detail-view .approval-head {
+    display: none;
+  }
+
+  .detail-view .approval-row {
+    grid-template-columns: 1fr;
+    gap: var(--vaadin-gap-xs);
+    padding: var(--vaadin-padding-m);
+  }
+
+  .detail-view .approval-cell[data-label]::before {
+    content: attr(data-label) ": ";
+    color: var(--vaadin-text-color-secondary);
+  }
+
+  .detail-view .approval-cell[data-label]:empty {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .manage-filters vaadin-text-field,
+  .manage-filters vaadin-select {
+    width: 100%;
+  }
+}
+
+.detail-info {
+  box-sizing: border-box;
+  width: 100%;
 }

@@ -2,8 +2,10 @@ package com.stubu.specdriven.employee;
 
 import com.stubu.specdriven.audit.AuditAction;
 import com.stubu.specdriven.audit.AuditJson;
+import com.stubu.specdriven.audit.AuditLogRepository;
 import com.stubu.specdriven.audit.AuditService;
 import com.stubu.specdriven.employee.EmployeeValidationException.Problem;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -37,14 +39,17 @@ public class EmployeeAdminService {
     private final EmployeeRepository employees;
     private final DepartmentRepository departments;
     private final AuditService auditService;
+    private final AuditLogRepository auditLog;
     private final AdminAccess adminAccess;
     private final TransactionTemplate transaction;
 
     public EmployeeAdminService(EmployeeRepository employees, DepartmentRepository departments,
-            AuditService auditService, AdminAccess adminAccess, PlatformTransactionManager transactionManager) {
+            AuditService auditService, AuditLogRepository auditLog, AdminAccess adminAccess,
+            PlatformTransactionManager transactionManager) {
         this.employees = employees;
         this.departments = departments;
         this.auditService = auditService;
+        this.auditLog = auditLog;
         this.adminAccess = adminAccess;
         this.transaction = new TransactionTemplate(transactionManager);
     }
@@ -57,10 +62,12 @@ public class EmployeeAdminService {
                 .collect(Collectors.toMap(Employee::getId, Function.identity()));
         Map<Long, String> departmentNames = departments.findAll().stream()
                 .collect(Collectors.toMap(Department::getId, Department::getName));
+        Map<Long, Instant> logins = new HashMap<>();
+        auditLog.findLatestLogins().forEach(login -> logins.put((Long) login[0], (Instant) login[1]));
         return byId.values().stream()
                 .sorted(Comparator.comparing(Employee::getLastName, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(Employee::getFirstName, String.CASE_INSENSITIVE_ORDER))
-                .map(employee -> row(employee, departmentNames, byId)).toList();
+                .map(employee -> row(employee, departmentNames, byId, logins.get(employee.getId()))).toList();
     }
 
     /** The departments to choose from. */
@@ -252,14 +259,18 @@ public class EmployeeAdminService {
         if (employee.getManagerId() != null) {
             employees.findById(employee.getManagerId()).ifPresent(manager -> byId.put(manager.getId(), manager));
         }
-        return row(employee, departmentNames, byId);
+        Map<Long, Instant> logins = new HashMap<>();
+        auditLog.findLatestLogins().forEach(login -> logins.put((Long) login[0], (Instant) login[1]));
+        return row(employee, departmentNames, byId, logins.get(employee.getId()));
     }
 
-    private static EmployeeRow row(Employee employee, Map<Long, String> departmentNames, Map<Long, Employee> byId) {
+    private static EmployeeRow row(Employee employee, Map<Long, String> departmentNames, Map<Long, Employee> byId,
+            Instant lastLoginAt) {
         Employee manager = employee.getManagerId() == null ? null : byId.get(employee.getManagerId());
         return new EmployeeRow(employee.getId(), employee.getEmail(), employee.getFirstName(), employee.getLastName(),
                 employee.getRole(), employee.getDepartmentId(), departmentNames.get(employee.getDepartmentId()),
-                employee.getManagerId(), manager == null ? null : manager.getFullName(), employee.isActive());
+                employee.getManagerId(), manager == null ? null : manager.getFullName(), employee.isActive(), employee.getCreatedAt(),
+                lastLoginAt);
     }
 
     /** The audit values of an employee. */
