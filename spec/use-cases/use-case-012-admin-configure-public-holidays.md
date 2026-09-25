@@ -4,8 +4,12 @@
 
 **Goal:** As an administrator, I want to add and remove public holidays so that the calendar is accurate for the organization.
 
-**Status:** Pending
+**Status:** Implemented
 **Date:** 2024-01-15
+
+> A use case cannot be marked as **Implemented** unless all criteria in the use case implementation workflow are fulfilled.
+
+> **Revision:** Administrators get a "Public holidays" entry in the navigation (`/admin/holidays`). The list shows the holidays of one year, earliest first (the current year is chosen first; "All years" shows everything), with "Edit" and "Delete" for each. Adding and editing use one form with a date picker (following the language of the page) and the name; both date and name can be edited, and a date that belongs to another holiday is refused. Dates from the year 2000 to 2100 are accepted, past and future alike (BR-04); the date picker cannot report unreadable input, so an empty date is answered with "Please enter a valid date.". Deleting is permanent after a confirmation (the audit entry keeps the date and name). Editing without changes writes no audit entry. Every change is stored together with its audit entry (CREATE, UPDATE with old and new values, DELETE with the old values) in one transaction, and only active administrators may call the service. The unique date is also enforced by the database, so two administrators adding the same date at the same moment cannot both succeed. Holidays show up in the month views of employees and managers (UC-005, UC-009) and never change worked time (BR-06).
 
 ---
 
@@ -172,15 +176,15 @@ Administrator navigates to the "Public Holidays" configuration view and clicks t
 
 ## Tests
 
-- [ ] Main Flow Add covered (steps 1–9)
-- [ ] Main Flow Edit covered (steps 10–20)
-- [ ] Main Flow Delete covered (steps 21–28)
-- [ ] AF-1 (Date Exists) covered
-- [ ] AF-2 (Invalid Date) covered
-- [ ] AF-3 (Empty Name) covered
-- [ ] AF-4 (Database Error) covered
-- [ ] AF-5 (Cancel) covered
-- [ ] BR-01–BR-06 covered
+- [x] Main Flow Add covered (steps 1–9)
+- [x] Main Flow Edit covered (steps 10–20)
+- [x] Main Flow Delete covered (steps 21–28)
+- [x] AF-1 (Date Exists) covered
+- [x] AF-2 (Invalid Date) covered
+- [x] AF-3 (Empty Name) covered
+- [x] AF-4 (Database Error) covered
+- [x] AF-5 (Cancel) covered
+- [x] BR-01–BR-06 covered
 
 ---
 

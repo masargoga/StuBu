@@ -1,6 +1,7 @@
 package com.stubu.specdriven.base;
 
 import com.stubu.specdriven.admin.EmployeeManagementView;
+import com.stubu.specdriven.admin.PublicHolidayView;
 import com.stubu.specdriven.approval.ApprovalsView;
 import com.stubu.specdriven.approval.EmployeesView;
 import com.stubu.specdriven.employee.Role;
@@ -42,6 +43,8 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
     private final SideNavItem employees = new SideNavItem("", EmployeesView.class, VaadinIcon.USERS.create());
     private final SideNavItem manageEmployees = new SideNavItem("", EmployeeManagementView.class,
             VaadinIcon.USERS.create());
+    private final SideNavItem holidays = new SideNavItem("", PublicHolidayView.class,
+            VaadinIcon.CALENDAR_O.create());
     private final DrawerToggle drawerToggle = new DrawerToggle();
 
     public MainLayout(AuthenticationContext authenticationContext) {
@@ -80,12 +83,13 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
         approvals.setTestId("nav-approvals");
         employees.setTestId("nav-employees");
         manageEmployees.setTestId("nav-employees");
+        holidays.setTestId("nav-holidays");
         navigation.addItem(today, timesheet);
         if (role == Role.MANAGER) {
             navigation.addItem(approvals, employees);
         }
         if (role == Role.ADMIN) {
-            navigation.addItem(manageEmployees);
+            navigation.addItem(manageEmployees, holidays);
         }
         navigation.addClassName("app-navigation");
         addToDrawer(new Scroller(navigation));
@@ -100,6 +104,7 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
         approvals.setLabel(getTranslation("nav.approvals"));
         employees.setLabel(getTranslation("nav.employees"));
         manageEmployees.setLabel(getTranslation("nav.employees"));
+        holidays.setLabel(getTranslation("nav.holidays"));
         navigation.getElement().setAttribute("aria-label", getTranslation("nav.label"));
         drawerToggle.setAriaLabel(getTranslation("nav.toggle"));
     }

@@ -37,13 +37,15 @@ public class EmployeeAdminService {
     private final EmployeeRepository employees;
     private final DepartmentRepository departments;
     private final AuditService auditService;
+    private final AdminAccess adminAccess;
     private final TransactionTemplate transaction;
 
     public EmployeeAdminService(EmployeeRepository employees, DepartmentRepository departments,
-            AuditService auditService, PlatformTransactionManager transactionManager) {
+            AuditService auditService, AdminAccess adminAccess, PlatformTransactionManager transactionManager) {
         this.employees = employees;
         this.departments = departments;
         this.auditService = auditService;
+        this.adminAccess = adminAccess;
         this.transaction = new TransactionTemplate(transactionManager);
     }
 
@@ -237,10 +239,7 @@ public class EmployeeAdminService {
     }
 
     private void requireAdmin(long adminId) {
-        Employee admin = employees.findById(adminId).orElseThrow(AdminOnlyException::new);
-        if (!admin.isActive() || admin.getRole() != Role.ADMIN) {
-            throw new AdminOnlyException();
-        }
+        adminAccess.require(adminId);
     }
 
     // --- mapping -----------------------------------------------------------------------------------

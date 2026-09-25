@@ -52,4 +52,12 @@ public class PublicHoliday {
     public String getName() {
         return name;
     }
+
+    public void setDate(LocalDate date) {
+        this.date = date;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 }

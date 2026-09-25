@@ -867,3 +867,40 @@ vaadin-grid::part(holiday-cell) {
     flex: 1 1 8rem;
   }
 }
+
+/* UC-012: public holidays */
+.holiday-view .approval-head,
+.holiday-view .approval-row {
+  grid-template-columns: 2fr 3fr 17rem;
+}
+
+.holiday-view vaadin-select {
+  --vaadin-input-field-value-font-size: var(--aura-font-size-l);
+  --vaadin-input-field-label-font-size: var(--aura-font-size-l);
+  max-width: 14rem;
+}
+
+@media (max-width: 900px) {
+  .holiday-view .approval-head {
+    display: none;
+  }
+
+  .holiday-view .approval-row {
+    grid-template-columns: 1fr;
+    gap: var(--vaadin-gap-xs);
+    padding: var(--vaadin-padding-m);
+  }
+
+  .holiday-view .approval-cell[data-label]::before {
+    content: attr(data-label) ": ";
+    color: var(--vaadin-text-color-secondary);
+  }
+
+  .holiday-view .manage-actions {
+    justify-content: flex-start;
+  }
+
+  .holiday-view .manage-actions .review-button {
+    flex: 1 1 8rem;
+  }
+}
