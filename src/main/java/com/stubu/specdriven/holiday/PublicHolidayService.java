@@ -4,6 +4,7 @@ import com.stubu.specdriven.audit.AuditAction;
 import com.stubu.specdriven.audit.AuditJson;
 import com.stubu.specdriven.audit.AuditService;
 import com.stubu.specdriven.employee.AdminAccess;
+import com.stubu.specdriven.employee.EditConflictException;
 import com.stubu.specdriven.holiday.HolidayValidationException.Problem;
 import java.time.LocalDate;
 import java.util.EnumSet;
@@ -14,6 +15,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -85,8 +87,18 @@ public class PublicHolidayService {
      * @throws HolidayValidationException if the data is not acceptable
      */
     public PublicHoliday update(long adminId, long holidayId, LocalDate date, String name) {
+        return update(adminId, holidayId, date, name, null);
+    }
+
+    /**
+     * Changes the date and name of a holiday that the administrator saw at the given version.
+     *
+     * @param expectedVersion the version the form was opened with; {@code null} skips the check
+     * @throws EditConflictException if somebody else changed the holiday since
+     */
+    public PublicHoliday update(long adminId, long holidayId, LocalDate date, String name, Long expectedVersion) {
         adminAccess.require(adminId);
-        holidays.findById(holidayId).orElseThrow(HolidayNotFoundException::new);
+        checkVersion(holidays.findById(holidayId).orElseThrow(HolidayNotFoundException::new), expectedVersion);
         Set<Problem> problems = validate(date, name, holidayId);
         if (!problems.isEmpty()) {
             throw new HolidayValidationException(problems, date);
@@ -94,6 +106,7 @@ public class PublicHolidayService {
         try {
             return Objects.requireNonNull(transaction.execute(status -> {
                 PublicHoliday holiday = holidays.findById(holidayId).orElseThrow(HolidayNotFoundException::new);
+                checkVersion(holiday, expectedVersion);
                 String before = values(holiday);
                 holiday.setDate(date);
                 holiday.setName(name.strip());
@@ -106,6 +119,14 @@ public class PublicHolidayService {
             }));
         } catch (DataIntegrityViolationException e) {
             throw new HolidayValidationException(EnumSet.of(Problem.DATE_TAKEN), date);
+        } catch (ObjectOptimisticLockingFailureException concurrent) {
+            throw new EditConflictException();
+        }
+    }
+
+    private static void checkVersion(PublicHoliday holiday, Long expectedVersion) {
+        if (expectedVersion != null && !expectedVersion.equals(holiday.getVersion())) {
+            throw new EditConflictException();
         }
     }
 

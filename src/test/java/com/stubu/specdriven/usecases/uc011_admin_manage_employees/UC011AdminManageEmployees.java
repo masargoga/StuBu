@@ -15,6 +15,7 @@ import com.stubu.specdriven.employee.AdminOnlyException;
 import com.stubu.specdriven.employee.Department;
 import com.stubu.specdriven.employee.DepartmentRepository;
 import com.stubu.specdriven.employee.DeactivationRefusedException;
+import com.stubu.specdriven.employee.EditConflictException;
 import com.stubu.specdriven.employee.Employee;
 import com.stubu.specdriven.employee.EmployeeAdminService;
 import com.stubu.specdriven.employee.EmployeeInput;
@@ -387,6 +388,28 @@ class UC011AdminManageEmployees extends SpringBrowserlessTest {
             jdbc.update("update employee set is_active = true where id = ?", carol);
         }
         assertTrue(employees.findByEmailIgnoreCase(NEW_EMAIL).isEmpty());
+    }
+
+    @Test
+    void br08_aSaveBasedOnAnOutdatedVersionIsRefusedInsteadOfOverwritingTheOtherChange() {
+        EmployeeRow opened = admin.list(carol).stream().filter(row -> row.id() == alice).findFirst().orElseThrow();
+        // Another administrator changes Alice after the form was opened.
+        admin.update(carol, alice, new EmployeeInput(null, "Alicia", "Employee", Role.EMPLOYEE, bob, engineering.getId()));
+        int audits = auditLog.findAllByOrderByIdAsc().size();
+
+        assertThrows(EditConflictException.class, () -> admin.update(carol, alice, new EmployeeInput(null, "Alice",
+                "Employee-Smith", Role.EMPLOYEE, bob, engineering.getId(), opened.version())));
+
+        Employee stored = employees.findById(alice).orElseThrow();
+        assertEquals("Alicia", stored.getFirstName(), "The other change is still there");
+        assertEquals("Employee", stored.getLastName());
+        assertEquals(audits, auditLog.findAllByOrderByIdAsc().size(), "A refused save is not audited");
+
+        EmployeeRow current = admin.list(carol).stream().filter(row -> row.id() == alice).findFirst().orElseThrow();
+        admin.update(carol, alice, new EmployeeInput(null, "Alicia", "Employee-Smith", Role.EMPLOYEE, bob,
+                engineering.getId(), current.version()));
+        assertEquals("Employee-Smith", employees.findById(alice).orElseThrow().getLastName(),
+                "With the current version the change is stored");
     }
 
     @Test

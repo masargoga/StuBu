@@ -374,6 +374,7 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
                 case CREATED -> new Message("manage.created", result.name(), false);
                 case UPDATED -> new Message("manage.updated", result.name(), false);
                 case GONE -> new Message("manage.gone", "", true);
+                case CONFLICT -> new Message("manage.conflict", result.name(), true);
             };
             refresh();
         });

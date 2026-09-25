@@ -1,6 +1,7 @@
 package com.stubu.specdriven.admin;
 
 import com.stubu.specdriven.employee.Choice;
+import com.stubu.specdriven.employee.EditConflictException;
 import com.stubu.specdriven.employee.EmployeeAdminService;
 import com.stubu.specdriven.employee.EmployeeInput;
 import com.stubu.specdriven.employee.EmployeeNotFoundException;
@@ -30,7 +31,7 @@ class EmployeeFormDialog {
 
     /** What happened, so the page can tell the administrator. */
     enum Outcome {
-        CREATED, UPDATED, GONE
+        CREATED, UPDATED, GONE, CONFLICT
     }
 
     private static final Logger log = LoggerFactory.getLogger(EmployeeFormDialog.class);
@@ -127,7 +128,8 @@ class EmployeeFormDialog {
             error.setVisible(false);
             EmployeeInput input = new EmployeeInput(email.getValue(), firstName.getValue(), lastName.getValue(),
                     role.getValue(), manager.getValue() == null ? null : manager.getValue().id(),
-                    department.getValue() == null ? null : department.getValue().id());
+                    department.getValue() == null ? null : department.getValue().id(),
+                    editing ? existing.version() : null);
             try {
                 EmployeeRow saved = editing ? service.update(adminId, existing.id(), input)
                         : service.create(adminId, input);
@@ -138,6 +140,9 @@ class EmployeeFormDialog {
             } catch (EmployeeNotFoundException gone) {
                 dialog.close();
                 done.accept(new Result(Outcome.GONE, ""));
+            } catch (EditConflictException conflict) {
+                dialog.close();
+                done.accept(new Result(Outcome.CONFLICT, existing.fullName()));
             } catch (DataAccessException e) {
                 log.error("Saving employee {} failed for administrator {}", editing ? existing.id() : "(new)",
                         adminId, e);

@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -25,6 +26,10 @@ public class PublicHoliday {
     @Column(nullable = false)
     private String name;
 
+    /** Counts the changes; a save based on an older version is refused. */
+    @Version
+    private Long version;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -39,6 +44,10 @@ public class PublicHoliday {
     @PrePersist
     void onCreate() {
         createdAt = Instant.now();
+    }
+
+    public Long getVersion() {
+        return version;
     }
 
     public Long getId() {

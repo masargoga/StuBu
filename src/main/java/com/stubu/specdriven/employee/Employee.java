@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.Instant;
 import java.util.Locale;
 
@@ -43,6 +44,10 @@ public class Employee {
 
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
+
+    /** Counts the changes; a save based on an older version is refused. */
+    @Version
+    private Long version;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -78,6 +83,10 @@ public class Employee {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Long getVersion() {
+        return version;
     }
 
     public Long getId() {

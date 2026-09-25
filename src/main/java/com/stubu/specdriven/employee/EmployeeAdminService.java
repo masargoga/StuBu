@@ -18,6 +18,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -130,10 +131,12 @@ public class EmployeeAdminService {
      *
      * @throws EmployeeNotFoundException   if there is no such employee
      * @throws EmployeeValidationException if the data is not acceptable
+     * @throws EditConflictException       if somebody else changed the employee since the form was opened
      */
     public EmployeeRow update(long adminId, long employeeId, EmployeeInput input) {
         requireAdmin(adminId);
         Employee current = employees.findById(employeeId).orElseThrow(EmployeeNotFoundException::new);
+        checkVersion(current, input.expectedVersion());
         Set<Problem> problems = EnumSet.noneOf(Problem.class);
         validateFields(input, current, problems);
         if (problems.isEmpty() && current.getRole() == Role.ADMIN && current.isActive()
@@ -143,8 +146,9 @@ public class EmployeeAdminService {
         if (!problems.isEmpty()) {
             throw new EmployeeValidationException(problems);
         }
-        return toRow(Objects.requireNonNull(transaction.execute(status -> {
+        return toRow(Objects.requireNonNull(inTransaction(() -> transaction.execute(status -> {
             Employee employee = employees.findById(employeeId).orElseThrow(EmployeeNotFoundException::new);
+            checkVersion(employee, input.expectedVersion());
             String before = values(employee);
             employee.setFirstName(input.firstName().strip());
             employee.setLastName(input.lastName().strip());
@@ -157,7 +161,7 @@ public class EmployeeAdminService {
                 auditService.record(adminId, ENTITY_TYPE, stored.getId(), AuditAction.UPDATE, before, after, null);
             }
             return employee;
-        })));
+        }))));
     }
 
     /**
@@ -179,14 +183,31 @@ public class EmployeeAdminService {
         if (current.getRole() == Role.ADMIN && isLastActiveAdmin(current)) {
             throw new DeactivationRefusedException(DeactivationRefusedException.Reason.LAST_ADMIN);
         }
-        transaction.executeWithoutResult(status -> {
+        inTransaction(() -> transaction.execute(status -> {
             Employee employee = employees.findById(employeeId).orElseThrow(EmployeeNotFoundException::new);
             String before = values(employee);
             employee.setActive(false);
             employees.saveAndFlush(employee);
             auditService.record(adminId, ENTITY_TYPE, employeeId, AuditAction.UPDATE, before, values(employee),
                     reason == null || reason.isBlank() ? "Deactivated" : "Deactivated: " + reason.strip());
-        });
+            return employee;
+        }));
+    }
+
+    /** Refuses the change when the employee is not at the version the administrator saw. */
+    private static void checkVersion(Employee employee, Long expectedVersion) {
+        if (expectedVersion != null && !expectedVersion.equals(employee.getVersion())) {
+            throw new EditConflictException();
+        }
+    }
+
+    /** Runs the change; a concurrent change that slips in between reading and writing is a conflict as well. */
+    private static <T> T inTransaction(java.util.function.Supplier<T> change) {
+        try {
+            return change.get();
+        } catch (ObjectOptimisticLockingFailureException concurrent) {
+            throw new EditConflictException();
+        }
     }
 
     // --- validation --------------------------------------------------------------------------------
@@ -270,7 +291,7 @@ public class EmployeeAdminService {
         return new EmployeeRow(employee.getId(), employee.getEmail(), employee.getFirstName(), employee.getLastName(),
                 employee.getRole(), employee.getDepartmentId(), departmentNames.get(employee.getDepartmentId()),
                 employee.getManagerId(), manager == null ? null : manager.getFullName(), employee.isActive(), employee.getCreatedAt(),
-                lastLoginAt);
+                lastLoginAt, employee.getVersion() == null ? 0 : employee.getVersion());
     }
 
     /** The audit values of an employee. */

@@ -1,6 +1,7 @@
 package com.stubu.specdriven.admin;
 
 import com.stubu.specdriven.base.MainLayout;
+import com.stubu.specdriven.employee.EditConflictException;
 import com.stubu.specdriven.holiday.HolidayNotFoundException;
 import com.stubu.specdriven.holiday.HolidayValidationException;
 import com.stubu.specdriven.holiday.HolidayValidationException.Problem;
@@ -291,7 +292,7 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
             error.setVisible(false);
             try {
                 PublicHoliday saved = editing ? service.update(adminId, existing.getId(), date.getValue(),
-                        name.getValue()) : service.add(adminId, date.getValue(), name.getValue());
+                        name.getValue(), existing.getVersion()) : service.add(adminId, date.getValue(), name.getValue());
                 message = editing ? new Message("holidays.updated", false)
                         : new Message("holidays.added", false, saved.getName(), formatted(saved.getDate()));
             } catch (HolidayValidationException invalid) {
@@ -299,6 +300,8 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
                 return;
             } catch (HolidayNotFoundException gone) {
                 message = new Message("holidays.gone", true);
+            } catch (EditConflictException conflict) {
+                message = new Message("holidays.conflict", true);
             } catch (DataAccessException e) {
                 log.error("Saving a public holiday failed for administrator {}", adminId, e);
                 error.setText(getTranslation("manage.saveFailed"));

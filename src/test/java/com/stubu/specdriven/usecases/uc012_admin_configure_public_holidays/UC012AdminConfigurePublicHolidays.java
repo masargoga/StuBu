@@ -13,6 +13,7 @@ import com.stubu.specdriven.audit.AuditLogEntry;
 import com.stubu.specdriven.audit.AuditLogRepository;
 import com.stubu.specdriven.employee.AdminOnlyException;
 import com.stubu.specdriven.employee.Department;
+import com.stubu.specdriven.employee.EditConflictException;
 import com.stubu.specdriven.employee.DepartmentRepository;
 import com.stubu.specdriven.employee.Employee;
 import com.stubu.specdriven.employee.EmployeeRepository;
@@ -376,6 +377,25 @@ class UC012AdminConfigurePublicHolidays extends SpringBrowserlessTest {
         assertThrows(org.springframework.dao.DataIntegrityViolationException.class,
                 () -> holidays.saveAndFlush(new PublicHoliday(LocalDate.of(2026, 12, 25), "Duplicate")));
         assertEquals(1, holidays.count());
+    }
+
+    @Test
+    void br07_aSaveBasedOnAnOutdatedVersionIsRefusedInsteadOfOverwritingTheOtherChange() {
+        PublicHoliday opened = service.add(carol, LocalDate.of(2026, 12, 25), "Christmas");
+        Long openedVersion = opened.getVersion();
+        // Another administrator renames the holiday after the form was opened.
+        service.update(carol, opened.getId(), LocalDate.of(2026, 12, 25), "Christmas Day", openedVersion);
+        int audits = auditLog.findAllByOrderByIdAsc().size();
+
+        assertThrows(EditConflictException.class, () -> service.update(carol, opened.getId(),
+                LocalDate.of(2026, 12, 26), "Boxing Day", openedVersion));
+
+        PublicHoliday stored = holidays.findById(opened.getId()).orElseThrow();
+        assertEquals("Christmas Day", stored.getName(), "The other change is still there");
+        assertEquals(LocalDate.of(2026, 12, 25), stored.getDate());
+        assertEquals(audits, auditLog.findAllByOrderByIdAsc().size(), "A refused save is not audited");
+        service.update(carol, opened.getId(), LocalDate.of(2026, 12, 26), "Boxing Day", stored.getVersion());
+        assertEquals("Boxing Day", holidays.findById(opened.getId()).orElseThrow().getName());
     }
 
     @Test
