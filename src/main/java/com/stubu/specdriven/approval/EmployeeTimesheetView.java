@@ -342,7 +342,7 @@ public class EmployeeTimesheetView extends VerticalLayout implements HasUrlParam
                             sheet.rejectionReason());
         });
         decide.setText(getTranslation("employeeTimesheet.decide"));
-        decide.setVisible(status == TimesheetStatus.SUBMITTED);
+        decide.setVisible(status == TimesheetStatus.SUBMITTED && details.canDecide());
     }
 
     private String date(Instant instant, Locale locale) {

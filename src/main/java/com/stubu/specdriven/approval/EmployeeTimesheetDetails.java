@@ -10,9 +10,10 @@ import java.util.List;
  * @param timesheetId the timesheet, or {@code null} if the employee has no timesheet for that month
  * @param sheet       the days and totals, or {@code null} if there is no timesheet
  * @param history     submission and decisions, oldest first; empty if there is no timesheet
+ * @param canDecide   whether the viewer may approve or reject it (managers, not administrators)
  */
 public record EmployeeTimesheetDetails(long employeeId, String employeeName, Role role, Long timesheetId,
-        MonthlyTimesheet sheet, List<HistoryEntry> history) {
+        MonthlyTimesheet sheet, List<HistoryEntry> history, boolean canDecide) {
 
     public boolean exists() {
         return sheet != null;

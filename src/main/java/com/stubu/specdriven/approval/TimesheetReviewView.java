@@ -272,10 +272,11 @@ public class TimesheetReviewView extends VerticalLayout implements HasUrlParamet
         boolean pending = status == TimesheetStatus.SUBMITTED;
         approve.setText(getTranslation("review.approve"));
         reject.setText(getTranslation("review.reject"));
-        approve.setEnabled(pending);
-        reject.setEnabled(pending);
-        actionNote.setText(pending ? "" : getTranslation("review.notPending"));
-        actionNote.setVisible(!pending);
+        boolean decidable = pending && details.canDecide();
+        approve.setEnabled(decidable);
+        reject.setEnabled(decidable);
+        actionNote.setText(decidable ? "" : getTranslation(pending ? "review.viewOnly" : "review.notPending"));
+        actionNote.setVisible(!decidable);
     }
 
     private String date(Instant instant, Locale locale) {

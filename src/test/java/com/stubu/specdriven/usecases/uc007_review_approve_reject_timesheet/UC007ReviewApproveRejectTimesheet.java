@@ -116,6 +116,7 @@ class UC007ReviewApproveRejectTimesheet extends SpringBrowserlessTest {
     private long bob;
     private long alice;
     private long carol;
+    private long mia;
     private long dora;
     private long frank;
     private long timesheetId;
@@ -133,6 +134,7 @@ class UC007ReviewApproveRejectTimesheet extends SpringBrowserlessTest {
         bob = person("bob.manager@example.com", "Bob", "Manager", Role.MANAGER, engineering, carol);
         alice = person("alice.employee@example.com", "Alice", "Employee", Role.EMPLOYEE, engineering, bob);
         dora = person("dora.colleague@example.com", "Dora", "Colleague", Role.EMPLOYEE, engineering, carol);
+        mia = person("mia.lead@example.com", "Mia", "Lead", Role.MANAGER, engineering, carol);
         long erin = person("erin.manager@example.com", "Erin", "Manager", Role.MANAGER, sales, carol);
         frank = person("frank.sales@example.com", "Frank", "Sales", Role.EMPLOYEE, sales, erin);
         record(alice, "2026-09-01T08:00:00Z", "2026-09-01T12:00:00Z");
@@ -346,7 +348,7 @@ class UC007ReviewApproveRejectTimesheet extends SpringBrowserlessTest {
                     go.await();
                     try {
                         if (approve) {
-                            reviews.approve(carol, timesheetId);
+                            reviews.approve(mia, timesheetId);
                         } else {
                             reviews.reject(bob, timesheetId, "no");
                         }
@@ -399,10 +401,12 @@ class UC007ReviewApproveRejectTimesheet extends SpringBrowserlessTest {
 
         assertThrows(ReviewNotAllowedException.class, () -> reviews.approve(bob, bobsSheet));
         assertEquals(TimesheetStatus.SUBMITTED, statusOf(bobsSheet));
-        reviews.approve(carol, bobsSheet); // his own manager, an administrator, can
+        assertThrows(ReviewNotAllowedException.class, () -> reviews.approve(carol, bobsSheet),
+                "His own manager is an administrator, who does not approve");
+        reviews.approve(mia, bobsSheet); // a manager of his department can
         assertEquals(TimesheetStatus.APPROVED, statusOf(bobsSheet));
-        long carolsSheet = submitted(carol);
-        assertThrows(ReviewNotAllowedException.class, () -> reviews.approve(carol, carolsSheet));
+        long miasSheet = submitted(mia);
+        assertThrows(ReviewNotAllowedException.class, () -> reviews.approve(mia, miasSheet));
     }
 
     // --- AF-3 / AF-4: Cancel --------------------------------------------------------------------
@@ -522,13 +526,16 @@ class UC007ReviewApproveRejectTimesheet extends SpringBrowserlessTest {
     }
 
     @Test
-    void br02_anAdministratorReviewsEverybody() {
+    void br02_anAdministratorCanLookAtEverybodyButNeverDecides() {
         long franksSheet = submitted(frank);
 
-        reviews.approve(carol, franksSheet);
-
-        assertEquals(TimesheetStatus.APPROVED, statusOf(franksSheet));
-        assertTrue(names(reviews.pending(carol, ReviewScope.DEPARTMENT)).contains("Alice Employee"));
+        assertThrows(ReviewNotAllowedException.class, () -> reviews.approve(carol, franksSheet));
+        assertThrows(ReviewNotAllowedException.class, () -> reviews.reject(carol, franksSheet, "no"));
+        assertEquals(TimesheetStatus.SUBMITTED, statusOf(franksSheet));
+        assertEquals("Frank Sales", reviews.details(carol, franksSheet, UTC).employeeName(), "Looking is allowed");
+        assertFalse(reviews.details(carol, franksSheet, UTC).canDecide());
+        assertTrue(reviews.details(bob, timesheetId, UTC).canDecide());
+        assertEquals(List.of(), reviews.pending(carol, ReviewScope.DEPARTMENT), "Approvals are the managers' queue");
     }
 
     @Test
@@ -587,7 +594,7 @@ class UC007ReviewApproveRejectTimesheet extends SpringBrowserlessTest {
         reviews.approve(bob, timesheetId);
 
         assertThrows(ReviewStatusException.class, () -> reviews.reject(bob, timesheetId, "too late"));
-        assertThrows(ReviewStatusException.class, () -> reviews.approve(carol, timesheetId));
+        assertThrows(ReviewStatusException.class, () -> reviews.approve(mia, timesheetId));
         assertEquals(TimesheetStatus.APPROVED, status());
     }
 

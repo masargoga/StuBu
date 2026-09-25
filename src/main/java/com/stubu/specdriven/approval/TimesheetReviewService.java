@@ -79,7 +79,7 @@ public class TimesheetReviewService {
     public List<PendingApproval> pending(long reviewerId, ReviewScope scope) {
         Employee reviewer = employees.findById(reviewerId).orElseThrow(ReviewNotAllowedException::new);
         Map<Long, Employee> subjects = inScope(reviewer, scope).stream()
-                .collect(Collectors.toMap(Employee::getId, Function.identity()));
+                .filter(subject -> authorization.mayDecide(reviewer, subject)).collect(Collectors.toMap(Employee::getId, Function.identity()));
         if (subjects.isEmpty()) {
             return List.of();
         }
@@ -98,7 +98,7 @@ public class TimesheetReviewService {
                     : reviewer.getDepartmentId() == null ? List.of()
                             : employees.findByDepartmentId(reviewer.getDepartmentId());
         };
-        return candidates.stream().filter(candidate -> authorization.mayReview(reviewer, candidate))
+        return candidates.stream().filter(candidate -> authorization.mayView(reviewer, candidate))
                 .sorted(Comparator.comparing(Employee::getLastName, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(Employee::getFirstName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
@@ -133,17 +133,17 @@ public class TimesheetReviewService {
             ZoneId zone) {
         Employee reviewer = employees.findById(reviewerId).orElseThrow(ReviewNotAllowedException::new);
         Employee subject = employees.findById(employeeId).orElseThrow(ReviewNotAllowedException::new);
-        if (!authorization.mayReview(reviewer, subject)) {
+        if (!authorization.mayView(reviewer, subject)) {
             throw new ReviewNotAllowedException();
         }
         Optional<Timesheet> timesheet = timesheetService.find(employeeId, month);
         if (timesheet.isEmpty()) {
             return new EmployeeTimesheetDetails(employeeId, subject.getFullName(), subject.getRole(), null, null,
-                    List.of());
+                    List.of(), false);
         }
         return new EmployeeTimesheetDetails(employeeId, subject.getFullName(), subject.getRole(),
                 timesheet.get().getId(), monthly.loadIfExists(employeeId, month, zone).orElse(null),
-                history(timesheet.get().getId()));
+                history(timesheet.get().getId()), authorization.mayDecide(reviewer, subject));
     }
 
     private List<HistoryEntry> history(long timesheetId) {
@@ -165,11 +165,11 @@ public class TimesheetReviewService {
         Timesheet sheet = timesheets.findById(timesheetId).orElseThrow(ReviewNotAllowedException::new);
         Employee reviewer = employees.findById(reviewerId).orElseThrow(ReviewNotAllowedException::new);
         Employee subject = employees.findById(sheet.getEmployeeId()).orElseThrow(ReviewNotAllowedException::new);
-        if (!authorization.mayReview(reviewer, subject)) {
+        if (!authorization.mayView(reviewer, subject)) {
             throw new ReviewNotAllowedException();
         }
         return new ReviewDetails(sheet.getId(), subject.getFullName(),
-                monthly.load(subject.getId(), sheet.getPeriod(), zone));
+                monthly.load(subject.getId(), sheet.getPeriod(), zone), authorization.mayDecide(reviewer, subject));
     }
 
     /**
@@ -210,7 +210,7 @@ public class TimesheetReviewService {
                 Employee reviewer = employees.findById(reviewerId).orElseThrow(ReviewNotAllowedException::new);
                 Employee subject = employees.findById(sheet.getEmployeeId())
                         .orElseThrow(ReviewNotAllowedException::new);
-                if (!authorization.mayReview(reviewer, subject)) {
+                if (!authorization.mayDecide(reviewer, subject)) {
                     throw new ReviewNotAllowedException();
                 }
                 if (sheet.getStatus() != TimesheetStatus.SUBMITTED) {
