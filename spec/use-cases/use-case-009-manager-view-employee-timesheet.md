@@ -4,8 +4,12 @@
 
 **Goal:** As a manager, I want to review an employee's complete timesheet and daily timeline so that I can make informed approval decisions.
 
-**Status:** Pending
+**Status:** Implemented
 **Date:** 2024-01-15
+
+> A use case cannot be marked as **Implemented** unless all criteria in the use case implementation workflow are fulfilled.
+
+> **Revision:** Managers and administrators get an "Employees" page (`/employees`) listing the employees they may look at, with a search by name or email address; "View timesheet" opens `/employees/timesheet/{employeeId}?month=YYYY-MM` for the current month (or the month in the address). The month is chosen with the previous/next buttons or the selector of the last 24 months, like on the employee's own page. The page shows the employee's name and role, the status, the same read-only timeline as the review page with the daily and monthly totals, and a "day details" button on every day with work periods that opens that day's timeline in a dialog. A submitted timesheet offers "Review and decide", which leads to the review page of UC-007. Who may be looked at is decided by the same `ReviewerAuthorization` as for reviewing (direct reports and the own department for managers, everybody for administrators, never oneself). Unlike the employee's own page, looking at a month never creates a timesheet: without one the page says "No timesheet found for [Employee] in [Month]" and the month can be changed (AF-2). BR-04 is realized as a history section under the timesheet with the submission, resubmission, approval and rejection from the audit log (who, when, reason); corrections of single time entries are not listed there. The default list shows direct reports; the switch to the whole department is UC-010.
 
 ---
 
@@ -120,12 +124,12 @@ Manager navigates to "Pending Approvals" or an employee's profile and clicks to 
 
 ## Tests
 
-- [ ] Main Flow covered (steps 1–10)
-- [ ] AF-1 (Not Direct Report) covered
-- [ ] AF-2 (No Timesheet) covered
-- [ ] AF-3 (No Entries) covered
-- [ ] AF-4 (Database Error) covered
-- [ ] BR-01–BR-04 covered
+- [x] Main Flow covered (steps 1–10)
+- [x] AF-1 (Not Direct Report) covered
+- [x] AF-2 (No Timesheet) covered
+- [x] AF-3 (No Entries) covered
+- [x] AF-4 (Database Error) covered
+- [x] BR-01–BR-04 covered
 
 ---
 

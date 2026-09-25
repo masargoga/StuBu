@@ -9,4 +9,6 @@ public interface AuditLogRepository extends Repository<AuditLogEntry, Long> {
     AuditLogEntry save(AuditLogEntry entry);
 
     List<AuditLogEntry> findAllByOrderByIdAsc();
+
+    List<AuditLogEntry> findByEntityTypeAndEntityIdOrderByIdAsc(String entityType, Long entityId);
 }

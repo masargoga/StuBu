@@ -43,7 +43,9 @@ public class TimesheetService {
         }
     }
 
-    private Optional<Timesheet> find(long employeeId, YearMonth period) {
+    /** The employee's timesheet for a month, if one exists; nothing is created. */
+    @Transactional(readOnly = true)
+    public Optional<Timesheet> find(long employeeId, YearMonth period) {
         return timesheets.findByEmployeeIdAndYearAndMonth(employeeId, period.getYear(), period.getMonthValue());
     }
 }

@@ -1,5 +1,6 @@
 package com.stubu.specdriven.approval;
 
+import com.stubu.specdriven.base.FlashMessage;
 import com.stubu.specdriven.base.MainLayout;
 import com.stubu.specdriven.monthlytimesheet.MonthTimeline;
 import com.stubu.specdriven.monthlytimesheet.MonthlyTimesheet;
@@ -149,7 +150,7 @@ public class TimesheetReviewView extends VerticalLayout implements HasUrlParamet
             load();
         } catch (ReviewNotAllowedException notAllowed) {
             // Also for a timesheet that does not exist: the two are not told apart.
-            ApprovalsView.flash("approvals.noPermission", true);
+            FlashMessage.set("approvals.noPermission", true);
             event.forwardTo(ApprovalsView.class);
             return;
         }
@@ -178,7 +179,7 @@ public class TimesheetReviewView extends VerticalLayout implements HasUrlParamet
         try {
             load();
         } catch (ReviewNotAllowedException notAllowed) {
-            ApprovalsView.flash("approvals.noPermission", true);
+            FlashMessage.set("approvals.noPermission", true);
             getUI().ifPresent(ui -> ui.navigate(ApprovalsView.class));
             return;
         }
@@ -317,7 +318,7 @@ public class TimesheetReviewView extends VerticalLayout implements HasUrlParamet
             showError(error, getTranslation("review.approve.failed")); // stays open: Approve again to retry
             return;
         }
-        ApprovalsView.flash("approvals.approved", false);
+        FlashMessage.set("approvals.approved", false);
         dialog.close();
         getUI().ifPresent(ui -> ui.navigate(ApprovalsView.class));
     }
@@ -378,7 +379,7 @@ public class TimesheetReviewView extends VerticalLayout implements HasUrlParamet
             showError(error, getTranslation("review.reject.failed")); // stays open: Reject again to retry
             return;
         }
-        ApprovalsView.flash("approvals.rejected", false);
+        FlashMessage.set("approvals.rejected", false);
         dialog.close();
         getUI().ifPresent(ui -> ui.navigate(ApprovalsView.class));
     }
@@ -393,7 +394,7 @@ public class TimesheetReviewView extends VerticalLayout implements HasUrlParamet
     }
 
     private void leaveWith(Dialog dialog, String messageKey) {
-        ApprovalsView.flash(messageKey, true);
+        FlashMessage.set(messageKey, true);
         dialog.close();
         getUI().ifPresent(ui -> ui.navigate(ApprovalsView.class));
     }

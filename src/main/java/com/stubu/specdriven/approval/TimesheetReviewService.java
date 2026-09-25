@@ -1,6 +1,7 @@
 package com.stubu.specdriven.approval;
 
 import com.stubu.specdriven.audit.AuditAction;
+import com.stubu.specdriven.audit.AuditLogRepository;
 import com.stubu.specdriven.audit.AuditService;
 import com.stubu.specdriven.employee.Employee;
 import com.stubu.specdriven.employee.EmployeeRepository;
@@ -10,12 +11,16 @@ import com.stubu.specdriven.notification.NotificationService;
 import com.stubu.specdriven.notification.TimesheetDecisionNotice;
 import com.stubu.specdriven.timesheet.Timesheet;
 import com.stubu.specdriven.timesheet.TimesheetRepository;
+import com.stubu.specdriven.timesheet.TimesheetService;
 import com.stubu.specdriven.timesheet.TimesheetStatus;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.YearMonth;
 import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -45,18 +50,22 @@ public class TimesheetReviewService {
     private final ReviewerAuthorization authorization;
     private final MonthlyTimesheetService monthly;
     private final AuditService auditService;
+    private final AuditLogRepository auditLog;
+    private final TimesheetService timesheetService;
     private final NotificationService notifications;
     private final Clock clock;
     private final TransactionTemplate transaction;
 
     public TimesheetReviewService(TimesheetRepository timesheets, EmployeeRepository employees,
             ReviewerAuthorization authorization, MonthlyTimesheetService monthly, AuditService auditService,
-            NotificationService notifications, Clock clock, PlatformTransactionManager transactionManager) {
+            AuditLogRepository auditLog, TimesheetService timesheetService, NotificationService notifications, Clock clock, PlatformTransactionManager transactionManager) {
         this.timesheets = timesheets;
         this.employees = employees;
         this.authorization = authorization;
         this.monthly = monthly;
         this.auditService = auditService;
+        this.auditLog = auditLog;
+        this.timesheetService = timesheetService;
         this.notifications = notifications;
         this.clock = clock;
         this.transaction = new TransactionTemplate(transactionManager);
@@ -69,13 +78,8 @@ public class TimesheetReviewService {
     @Transactional(readOnly = true)
     public List<PendingApproval> pending(long reviewerId, ReviewScope scope) {
         Employee reviewer = employees.findById(reviewerId).orElseThrow(ReviewNotAllowedException::new);
-        List<Employee> candidates = switch (scope) {
-            case DIRECT_REPORTS -> employees.findByManagerId(reviewer.getId());
-            case DEPARTMENT -> reviewer.getRole() == Role.ADMIN ? employees.findAll()
-                    : employees.findByDepartmentId(reviewer.getDepartmentId());
-        };
-        Map<Long, Employee> subjects = candidates.stream().filter(candidate -> authorization.mayReview(reviewer,
-                candidate)).collect(Collectors.toMap(Employee::getId, Function.identity()));
+        Map<Long, Employee> subjects = inScope(reviewer, scope).stream()
+                .collect(Collectors.toMap(Employee::getId, Function.identity()));
         if (subjects.isEmpty()) {
             return List.of();
         }
@@ -83,6 +87,61 @@ public class TimesheetReviewService {
                 subjects.keySet()).stream()
                 .map(sheet -> new PendingApproval(sheet.getId(), subjects.get(sheet.getEmployeeId()).getFullName(),
                         sheet.getPeriod(), sheet.getSubmittedAt()))
+                .toList();
+    }
+
+    /** The employees the reviewer may look at in the given scope, by name. */
+    private List<Employee> inScope(Employee reviewer, ReviewScope scope) {
+        List<Employee> candidates = switch (scope) {
+            case DIRECT_REPORTS -> employees.findByManagerId(reviewer.getId());
+            case DEPARTMENT -> reviewer.getRole() == Role.ADMIN ? employees.findAll()
+                    : reviewer.getDepartmentId() == null ? List.of()
+                            : employees.findByDepartmentId(reviewer.getDepartmentId());
+        };
+        return candidates.stream().filter(candidate -> authorization.mayReview(reviewer, candidate))
+                .sorted(Comparator.comparing(Employee::getLastName, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(Employee::getFirstName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
+
+    /** The employees the reviewer may look at in the given scope, sorted by name. */
+    @Transactional(readOnly = true)
+    public List<EmployeeSummary> employees(long reviewerId, ReviewScope scope) {
+        Employee reviewer = employees.findById(reviewerId).orElseThrow(ReviewNotAllowedException::new);
+        return inScope(reviewer, scope).stream().map(employee -> new EmployeeSummary(employee.getId(),
+                employee.getFullName(), employee.getEmail(), employee.getRole(), employee.isActive())).toList();
+    }
+
+    /**
+     * An employee's timesheet for a month in any status, read-only, with its history from the audit log.
+     * Nothing is created: without a timesheet the result says so ({@link EmployeeTimesheetDetails#exists()}).
+     *
+     * @param zone the time zone that decides which day an entry belongs to
+     * @throws ReviewNotAllowedException if there is no such employee or the reviewer may not see them
+     */
+    @Transactional(readOnly = true)
+    public EmployeeTimesheetDetails employeeTimesheet(long reviewerId, long employeeId, YearMonth month,
+            ZoneId zone) {
+        Employee reviewer = employees.findById(reviewerId).orElseThrow(ReviewNotAllowedException::new);
+        Employee subject = employees.findById(employeeId).orElseThrow(ReviewNotAllowedException::new);
+        if (!authorization.mayReview(reviewer, subject)) {
+            throw new ReviewNotAllowedException();
+        }
+        Optional<Timesheet> timesheet = timesheetService.find(employeeId, month);
+        if (timesheet.isEmpty()) {
+            return new EmployeeTimesheetDetails(employeeId, subject.getFullName(), subject.getRole(), null, null,
+                    List.of());
+        }
+        return new EmployeeTimesheetDetails(employeeId, subject.getFullName(), subject.getRole(),
+                timesheet.get().getId(), monthly.loadIfExists(employeeId, month, zone).orElse(null),
+                history(timesheet.get().getId()));
+    }
+
+    private List<HistoryEntry> history(long timesheetId) {
+        return auditLog.findByEntityTypeAndEntityIdOrderByIdAsc(ENTITY_TYPE, timesheetId).stream()
+                .map(entry -> new HistoryEntry(entry.getTimestamp(), entry.getAction(),
+                        entry.getUserId() == null ? null : employees.findById(entry.getUserId())
+                                .map(Employee::getFullName).orElse(null), entry.getReason()))
                 .toList();
     }
 

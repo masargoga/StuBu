@@ -728,7 +728,8 @@ vaadin-grid::part(holiday-cell) {
   font-size: var(--aura-font-size-l);
 }
 
-.review-view > vaadin-button {
+.review-view > vaadin-button,
+.employee-timesheet-view > vaadin-button {
   align-self: flex-start;
   font-size: var(--aura-font-size-l);
 }
@@ -744,4 +745,51 @@ vaadin-grid::part(holiday-cell) {
 .timesheet-status-rejected {
   border-color: var(--aura-red);
   border-width: 2px;
+}
+
+/* UC-009: history of a timesheet */
+.timesheet-history {
+  font-size: var(--aura-font-size-l);
+}
+
+.timesheet-history h3 {
+  margin: var(--vaadin-gap-m) 0 var(--vaadin-gap-s);
+  font-size: var(--aura-font-size-xl);
+}
+
+.history-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vaadin-gap-xs) var(--vaadin-gap-m);
+  padding: var(--vaadin-padding-s) 0;
+  border-bottom: 1px solid var(--vaadin-border-color-secondary);
+}
+
+.history-when {
+  color: var(--vaadin-text-color-secondary);
+}
+
+.history-reason {
+  flex-basis: 100%;
+}
+
+.employees-view .approval-head,
+.employees-view .approval-row {
+  grid-template-columns: 2fr 2fr 2fr 11rem;
+}
+
+.employees-view vaadin-text-field {
+  --vaadin-input-field-value-font-size: var(--aura-font-size-l);
+  --vaadin-input-field-label-font-size: var(--aura-font-size-l);
+}
+
+@media (max-width: 640px) {
+  .employees-view .approval-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.day-header vaadin-button[data-testid="day-details"] {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
 }

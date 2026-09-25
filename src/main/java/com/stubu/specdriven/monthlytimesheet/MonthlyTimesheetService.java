@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import org.springframework.stereotype.Service;
@@ -62,8 +63,19 @@ public class MonthlyTimesheetService {
         if (month.isAfter(currentMonth(zone))) {
             throw new IllegalArgumentException("Future months are not displayed: " + month);
         }
+        return build(timesheets.getOrCreate(employeeId, month), employeeId, month, zone);
+    }
+
+    /**
+     * Like {@link #load}, but for looking at somebody else's timesheet: nothing is created, and a month for which
+     * the employee never opened a timesheet gives an empty result.
+     */
+    public Optional<MonthlyTimesheet> loadIfExists(long employeeId, YearMonth month, ZoneId zone) {
+        return timesheets.find(employeeId, month).map(timesheet -> build(timesheet, employeeId, month, zone));
+    }
+
+    private MonthlyTimesheet build(Timesheet timesheet, long employeeId, YearMonth month, ZoneId zone) {
         Instant now = clock.instant();
-        Timesheet timesheet = timesheets.getOrCreate(employeeId, month);
 
         Instant from = month.atDay(1).atStartOfDay(zone).toInstant();
         Instant to = month.plusMonths(1).atDay(1).atStartOfDay(zone).toInstant();

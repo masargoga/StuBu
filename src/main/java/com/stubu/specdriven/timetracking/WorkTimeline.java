@@ -26,6 +26,7 @@ public class WorkTimeline extends Div {
 
     private static final int[] AXIS_HOURS = { 0, 4, 8, 12, 16, 20, 24 };
 
+    private boolean readOnly;
     private SerializableConsumer<Long> editHandler = id -> {
     };
     private SerializableConsumer<Long> deleteHandler = id -> {
@@ -33,6 +34,11 @@ public class WorkTimeline extends Div {
 
     public WorkTimeline() {
         addClassName("timeline");
+    }
+
+    /** A read-only timeline shows the periods without Edit and Delete, e.g. for a manager. */
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
     }
 
     /** What happens when the user chooses Edit or Delete on an entry; called with the entry's id. */
@@ -89,7 +95,8 @@ public class WorkTimeline extends Div {
         }
 
         boolean editable = day.isEditable(entry);
-        Div header = new Div(label, status, actions(entry.getId(), start, editable));
+        Div header = readOnly ? new Div(label, status)
+                : new Div(label, status, actions(entry.getId(), start, editable));
         header.addClassName("timeline-row-header");
 
         Div bar = DayTrack.bar(entry, dayStart, dayEnd, now);
@@ -97,7 +104,7 @@ public class WorkTimeline extends Div {
         track.addClassName("timeline-track");
         track.getElement().setAttribute("aria-hidden", "true");
 
-        Div row = editable ? new Div(header, track) : new Div(header, lockedNote(), track);
+        Div row = editable || readOnly ? new Div(header, track) : new Div(header, lockedNote(), track);
         row.addClassName("timeline-row");
         row.setClassName("timeline-row-open", entry.isActive());
         row.getElement().setAttribute("role", "listitem");

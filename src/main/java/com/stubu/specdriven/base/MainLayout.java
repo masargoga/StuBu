@@ -1,6 +1,7 @@
 package com.stubu.specdriven.base;
 
 import com.stubu.specdriven.approval.ApprovalsView;
+import com.stubu.specdriven.approval.EmployeesView;
 import com.stubu.specdriven.employee.Role;
 import com.stubu.specdriven.home.HomeView;
 import com.stubu.specdriven.monthlytimesheet.MonthlyTimesheetView;
@@ -24,7 +25,7 @@ import jakarta.annotation.security.PermitAll;
 
 /**
  * Application shell for authenticated users: title, who is signed in, sign out, and the navigation drawer
- * (Today, My Timesheet, and Approvals for managers and administrators).
+ * (Today, My Timesheet, and Approvals and Employees for managers and administrators).
  */
 @PermitAll
 public class MainLayout extends AppLayout implements LocaleChangeObserver {
@@ -37,6 +38,7 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
             VaadinIcon.CALENDAR.create());
     private final SideNavItem approvals = new SideNavItem("", ApprovalsView.class,
             VaadinIcon.CHECK_SQUARE_O.create());
+    private final SideNavItem employees = new SideNavItem("", EmployeesView.class, VaadinIcon.USERS.create());
     private final DrawerToggle drawerToggle = new DrawerToggle();
 
     public MainLayout(AuthenticationContext authenticationContext) {
@@ -74,9 +76,10 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
         today.setTestId("nav-today");
         timesheet.setTestId("nav-timesheet");
         approvals.setTestId("nav-approvals");
+        employees.setTestId("nav-employees");
         navigation.addItem(today, timesheet);
         if (reviewer) {
-            navigation.addItem(approvals);
+            navigation.addItem(approvals, employees);
         }
         navigation.addClassName("app-navigation");
         addToDrawer(new Scroller(navigation));
@@ -89,6 +92,7 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
         today.setLabel(getTranslation("nav.today"));
         timesheet.setLabel(getTranslation("nav.timesheet"));
         approvals.setLabel(getTranslation("nav.approvals"));
+        employees.setLabel(getTranslation("nav.employees"));
         navigation.getElement().setAttribute("aria-label", getTranslation("nav.label"));
         drawerToggle.setAriaLabel(getTranslation("nav.toggle"));
     }

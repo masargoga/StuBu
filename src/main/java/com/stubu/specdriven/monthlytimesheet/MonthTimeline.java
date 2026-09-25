@@ -29,6 +29,7 @@ public class MonthTimeline extends Div {
     private static final int[] AXIS_HOURS = { 0, 4, 8, 12, 16, 20, 24 };
 
     private boolean readOnly;
+    private SerializableConsumer<LocalDate> dayHandler;
     private SerializableConsumer<Long> editHandler = id -> {
     };
     private SerializableConsumer<Long> deleteHandler = id -> {
@@ -41,6 +42,11 @@ public class MonthTimeline extends Div {
     /** A read-only timeline never offers Edit or Delete, whatever the status of the timesheet (manager review). */
     public void setReadOnly(boolean readOnly) {
         this.readOnly = readOnly;
+    }
+
+    /** Adds a "day details" button to every day with work periods; called with the chosen day. */
+    public void setDayDetails(SerializableConsumer<LocalDate> onDay) {
+        this.dayHandler = onDay;
     }
 
     /** What happens when the user chooses Edit or Delete on a work period; called with the entry's id. */
@@ -98,6 +104,16 @@ public class MonthTimeline extends Div {
         summary.addClassName(hasEntries ? "day-summary" : "day-none");
         summary.setTestId("day-summary");
         header.add(summary);
+        if (dayHandler != null && hasEntries) {
+            Button details = new Button(VaadinIcon.EXPAND_FULL.create());
+            details.setTestId("day-details");
+            details.addThemeVariants(ButtonVariant.TERTIARY);
+            details.getElement().setAttribute("aria-label", getTranslation("timesheet.day.details",
+                    date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale))));
+            details.setTooltipText(getTranslation("timesheet.day.detailsTooltip"));
+            details.addClickListener(event -> dayHandler.accept(date));
+            header.add(details);
+        }
 
         Div row = new Div(header);
         row.addClassName("day-row");
