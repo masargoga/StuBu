@@ -1,60 +1,56 @@
-# Spec-Driven Development Template
+# StuBu – Employee Time Tracking
 
-A project template for building applications with AI by writing specifications instead of chat prompts. Specs in `spec/` are the single source of truth — the AI reads them, writes code, verifies the result visually, and writes tests.
+StuBu records working time. Employees check in and out (or correct their days afterwards), submit a monthly
+timesheet, and their manager approves or rejects it. Administrators manage employees and public holidays and can
+look at everything, including the audit log. The application is meant for companies in Germany and is available in
+English and German.
 
-## Getting Started
+It is built specification-first: the requirements in [`spec/`](spec/) are the single source of truth, and each use
+case was implemented and verified (automated tests plus a real-browser check at desktop, tablet and phone size) one
+after the other.
 
-### 1. Know where the project-wide rules live
+## What it does
 
-These files describe the project as a whole. They ship with sensible defaults (Vaadin + Spring Boot stack, a working design system, standard structure), so **you don't have to edit anything to get going** — you can jump straight to writing a use case.
+| Who | What |
+|-----|------|
+| **Everyone** | Sign in with Microsoft Entra ID or Google. Check in and check out, see today's timeline with worked and break time, correct earlier days, see the month with weekends and public holidays, submit the month for approval, correct and resubmit a rejected month. |
+| **Managers** | Get an email when a timesheet is submitted. Approve or reject (with a reason) the timesheets of their direct reports and their department, look at any employee of that scope and their history. |
+| **Administrators** | Add, change and deactivate employees. Maintain public holidays. Look at all employees and timesheets (but not approve them). Search and export the audit log. |
 
-Edit them when you want to deviate from the defaults or add project-specific context.
+More: [end-user guide](docs/user-guide.md), [use cases](spec/use-cases/), [full specification](spec/spec.md).
 
-| File | What goes here |
-|------|----------------|
-| `spec/project-context.md` | Vision, users, scope, constraints |
-| `spec/architecture.md` | Tech stack and application structure |
-| `spec/datamodel/datamodel.md` | Entities and relationships |
-| `spec/design-system.md` | Theme, components, visual standards |
+## Quick start
 
-If the AI keeps getting something wrong or makes a choice you disagree with, the fix is almost always to add or sharpen a rule in one of these files — not to repeat yourself in chat.
+Java 25 is required.
 
-### 2. Define use cases
+```bash
+./mvnw spring-boot:test-run
+```
 
-Features are specified as use cases in `spec/use-cases/`. Each use case is one file describing one capability (e.g. "browse movies", "buy a ticket", "admin manages screenings").
+Open <http://localhost:8080> and sign in through the mock identity provider with one of the sample employees:
+`alice.employee@example.com`, `bob.manager@example.com`, `carol.admin@example.com` (or the deactivated
+`dave.inactive@example.com`). Data lives in H2 in memory and is gone on restart.
 
-The fastest way is to invoke the **`new-use-case`** skill — it interviews you for the details and writes a filled-in file in `spec/use-cases/` for you. A fresh project may have no use cases yet; just run the skill to add the first one.
+```bash
+./mvnw -Dvaadin.skip=true test     # fast tests (no browser), about 280 tests
+./mvnw test -Pe2e                  # real-browser tests with Playwright (needs Chrome or Edge), about 130 tests
+```
 
-If you'd rather write it by hand, copy `spec/use-cases/use-case-template.md` to `use-case-NNN-short-name.md` and fill it in: main flow, business rules, acceptance criteria, routes.
+## Documentation
 
-### 3. Implement use cases one at a time
+| Document | Content |
+|----------|---------|
+| [DEVELOPMENT.md](DEVELOPMENT.md) | Build, run and test commands; every configuration setting; PostgreSQL, sign-in providers, email |
+| [docs/operations.md](docs/operations.md) | Docker, Kubernetes, health checks, sessions, logging, retention, scaling |
+| [docs/authorization.md](docs/authorization.md) | Who may do what, where it is enforced |
+| [docs/domain.md](docs/domain.md) | Domain model, timesheet state machine, invariants, database schema |
+| [docs/assumptions-and-legal.md](docs/assumptions-and-legal.md) | Assumptions made, and rules that legal or business stakeholders must confirm |
+| [docs/user-guide.md](docs/user-guide.md) | The workflows from the point of view of employees, managers and administrators |
+| [spec/architecture.md](spec/architecture.md) | Technology and structure, package by package |
+| [spec/design-system.md](spec/design-system.md) | Look and feel, accessibility rules |
 
-**For most work, one skill is all you need:** the **`implement-use-case`** skill, invoked with the use case name or number. It drives the whole flow — writes code, verifies the UI visually, writes tests, commits.
+## Technology
 
-Two helper skills exist for when you want to run a single step on its own:
-
-| Skill | Purpose |
-|-------|---------|
-| `implement-use-case` | Implements a use case end-to-end: writes code, runs visual verification, writes tests, commits |
-| `visual-verification` | Runs Playwright against the app and checks the UI against the use case |
-| `use-case-tests` | Writes and runs the automated tests for a use case |
-
-`implement-use-case` invokes the other two as part of its flow, so you rarely need to run them directly.
-
-> Skill definitions live under `.claude/skills/`. Different AI tools invoke skills differently — some have shortcut syntax, others expect you to point the AI at the skill file. Use whatever your tool supports; the skills themselves are the same.
-
-## A Typical Run-Through
-
-Say you have three use cases: `use-case-001-browse-movies.md`, `use-case-002-buy-ticket.md`, `use-case-003-admin-screenings.md`.
-
-1. **(Optional) Tweak the defaults.** Skim `spec/project-context.md` and `spec/architecture.md`. Fill in any `[bracketed placeholders]` you care about — or leave them; the defaults work.
-2. **Implement the first use case.** Run the `implement-use-case` skill for use case 001. When it finishes you have a running application with browsing working, screenshots verified, tests passing, and a commit on the branch.
-3. **Review and adjust.** Run the app (`./mvnw` — see [DEVELOPMENT.md](DEVELOPMENT.md)), click through it. If something is off, update the use case file (or a project-wide rule) and re-run `implement-use-case` for 001.
-4. **Move on to the next use case.** Run `implement-use-case` for 002, then 003. Don't move on until the previous one is fully done — code, visual check, tests, commit.
-
-After all three you have an application that does the three things you specified, with tests covering each, and a spec folder that explains why everything looks the way it does.
-
-## More
-
-- [`spec/README.md`](spec/README.md) — full spec structure and workflow
-- [DEVELOPMENT.md](DEVELOPMENT.md) — build, run, and test commands
+Java 25, Spring Boot 4, Vaadin 25 (Flow, Aura theme), Spring Security with OpenID Connect, Spring Data JPA with
+Flyway, PostgreSQL in production and H2 for tests and local development, JUnit 5, Vaadin browserless tests and
+Playwright for Java.

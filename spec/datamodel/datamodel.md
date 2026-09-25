@@ -17,6 +17,7 @@ Core user identity and organizational context.
 | managerId | Long (FK) | Nullable | References another Employee if this employee has a manager |
 | departmentId | Long (FK) | Not null | References Department |
 | isActive | Boolean | Not null, default true | Soft delete for historical tracking |
+| version | Long | Not null | Optimistic locking: an administrator's save based on an older version is refused |
 | createdAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
 | updatedAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
 
@@ -71,6 +72,7 @@ Calendar configuration for holidays. UC-005 only reads it (management is UC-012)
 | id | Long (PK) | Auto-generated | |
 | date | LocalDate | Not null, Unique | Holiday date |
 | name | String | Not null | Holiday name |
+| version | Long | Not null | Optimistic locking |
 | createdAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
 
 ### AuditLog
@@ -116,10 +118,10 @@ AuditLog (one-to-many relationships)
 - **BR-02:** Only active employees can log in and access the system.
 - **BR-03:** Managers must have at least one direct report to see the manager UI.
 - **BR-04:** TimeEntries for the same employee on the same date belong to the same Timesheet.
-- **BR-05:** A Timesheet can only be created/modified when in DRAFT status.
+- **BR-05:** The time entries of a Timesheet can only be created, changed or deleted while it is DRAFT or REJECTED.
 - **BR-06:** A Timesheet must contain at least one TimeEntry to be submitted.
 - **BR-07:** Once submitted (SUBMITTED status), a Timesheet cannot be edited by the employee.
-- **BR-08:** Only the manager (or an admin) can approve or reject a submitted Timesheet.
-- **BR-09:** A rejected Timesheet returns to DRAFT status, allowing the employee to correct it.
+- **BR-08:** Only a manager of the employee (a direct manager, or a manager of the employee's department) can approve or reject a submitted Timesheet. Administrators can look at it but never decide.
+- **BR-09:** A rejected Timesheet stays REJECTED, with its reason, until the employee has corrected it and submits it again (then it is SUBMITTED).
 - **BR-10:** All significant data changes must be logged to AuditLog with user context.
 - **BR-11:** Public holidays are informational only; they do not automatically exclude days from timesheet calculations.

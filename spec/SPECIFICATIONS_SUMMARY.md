@@ -252,7 +252,10 @@ PublicHoliday (standalone, informational)
 - No sensitive data in logs
 - Audit trail for compliance
 
-## Development Roadmap (Phased Implementation)
+## Development Phases (all implemented)
+
+All 14 use cases are implemented and tested; the phases below are the order in which they were built. What was decided
+and assumed while building is in [docs/assumptions-and-legal.md](../docs/assumptions-and-legal.md).
 
 ### Phase 1: Foundation
 - IAM authentication & employee lookup
@@ -313,16 +316,13 @@ PublicHoliday (standalone, informational)
 9. **Data export** — Future CSV/Excel export or API required?
 10. **Compliance certification** — German labor law audit required before production?
 
-## Next Steps
+## Where to go from here
 
-1. **Review & Validate** — Stakeholders review all specifications for correctness and completeness
-2. **Clarify Open Questions** — Address assumptions and open questions with business/legal teams
-3. **Finalize Domain Model** — Confirm entity relationships and state machines
-4. **Begin Implementation** — Follow phased roadmap, starting with Phase 1 (Foundation)
-5. **Continuous Validation** — After each phase, verify implementation against specifications
+1. **Legal and business validation:** answer the open questions above and in [docs/assumptions-and-legal.md](../docs/assumptions-and-legal.md).
+2. **First production rollout:** follow [docs/operations.md](../docs/operations.md) (PostgreSQL, sign-in providers, Docker, Kubernetes).
+3. **Change the specification first:** new or changed behaviour starts as an update of the use case files, then `implement-use-case`.
 
 ---
 
-**Specification Version:** 1.0  
-**Date:** 2024-01-15  
-**Status:** Ready for Development
+**Specification Version:** 1.1  
+**Status:** Implemented (14 of 14 use cases)
