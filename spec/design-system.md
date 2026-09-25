@@ -110,13 +110,17 @@ Aura computes gap and padding from `--aura-base-size` (unitless, range 12–24).
 
 ## 5. Component Standards
 
-> Preferred Vaadin components and usage patterns. List components actually used or planned.
-
-| Component | When to Use | Notes |
+| Component | When to use | Notes |
 |-----------|-------------|-------|
-| [e.g., `Button`] | [Primary and secondary actions] | [Use primary variant for main CTA] |
-| [e.g., `Grid`] | [Tabular data display] | [Always enable column sorting] |
-| [e.g., `Notification`] | [User feedback] | [Use appropriate position and duration] |
+| `Button` | Actions | One primary (green) button per area; the action that is not possible right now steps back (outlined). Never smaller than 44px, the two time actions are 64px |
+| Cards (`.time-hero`, `.time-card`, `.timesheet-status`, `.approval-row`) | Group related content | White surface, 1px soft border, small shadow (`--stubu-card-shadow`), large radius. No card inside a card |
+| Summary tiles (`.time-totals` > `.time-total`) | Key numbers | Small label above a large value; label and value are one readable text ("Total hours today: 5h 34m") |
+| `Badge` | Status | Always with text, colour only supports it |
+| `Avatar` | Signed-in user in the header | Initials on the soft green tint |
+| `SideNav` | Navigation drawer | The current page has the soft green tint |
+| Responsive div table (`.approval-head/.approval-row`) | Lists of people, timesheets, holidays, audit entries | Columns on wide screens, one card per row on narrow ones (`data-label` is shown in front of the value) |
+| `Dialog` | Corrections, confirmations | Large radius, errors inside the dialog (`DialogError`) |
+| `MessageBox`, `LoadErrorBox` | Feedback and load errors | Icon and text, so state is never only a colour |
 
 ---
 
@@ -126,3 +130,17 @@ Aura computes gap and padding from `--aura-base-size` (unitless, range 12–24).
 - **Tablet** (640–1024px): Two-column grid, side-by-side content
 - **Desktop** (> 1024px): Multi-column grid, admin grid+form side by side
 
+---
+
+## 7. Brand and look (design refresh)
+
+Light and airy: soft surfaces, generous spacing, one accent colour.
+
+- **Accent:** green `#0e7a4b` (`--stubu-green`, set as `--aura-accent-color-light`; white text on it has a contrast of about 5.4:1). The tints `--stubu-green-soft` (selected item, hover, hints) and `--stubu-green-line` (borders) are mixed from it with `color-mix`. Green also means "working now": the status dot, the elapsed time and the open period. Red and orange are only for errors, delete and holidays.
+- **Icon mark:** `icons/stubu-mark.svg`, a clock face with a progress arc on a green rounded tile. It is used in the header, on the login card and as the favicon (`AppLogo`, `Application.configurePage`). It has no text of its own; the name "Employee Time Tracking" is beside it.
+- **Spacing and shape:** `--aura-base-size: 18` from 800px width up (the Aura default below), base radius 8, cards use `--vaadin-radius-l`. Page background is a very light green-grey gradient.
+- **Type:** Aura's Instrument Sans; headings semibold with slightly tighter letter spacing; tabular numbers for times. The sizes stay large (accessibility): body text at least `--aura-font-size-l`.
+- **Time display:** the Today page has a status card (state, current time, elapsed time and the two actions), three summary tiles (total, break, first check-in) and the day card with the timeline. Timeline: solid green blocks on a soft track, an open period is striped, breaks are the gaps. The visible time span is 06:00 to 20:00 and widens in whole hours to fit every period (`TimelineWindow`); the month view uses one shared span so its rows can be compared.
+- **Login:** card with the icon mark and the provider buttons with the provider's logo (Google, Microsoft; drawn by `styles.css` from `data-provider`).
+- **Not in this round:** dark mode (the accent has a dark value already, `--aura-accent-color-dark`), an overflow menu for row actions (Edit, Details and Deactivate stay visible buttons: fewer clicks and large targets for the users).
+- **Guard rails:** the browser tests check contrast (WCAG AA), no horizontal scrolling, large buttons and the layout at 1920x1080, 768x1024 and 375x812.

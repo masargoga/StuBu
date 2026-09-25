@@ -28,6 +28,7 @@ public final class ViewTexts {
 
     /** The time format separates the time from AM/PM with a narrow no-break space; both kinds become a normal space. */
     public static String normalize(String text) {
-        return text.replace('\u202f', ' ').replace('\u00a0', ' ');
+        // Runs of white space count as one, as they do on the page.
+        return text.replace('\u202f', ' ').replace('\u00a0', ' ').replaceAll(" {2,}", " ");
     }
 }

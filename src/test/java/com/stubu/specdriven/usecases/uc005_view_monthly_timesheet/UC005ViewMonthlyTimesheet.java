@@ -333,7 +333,7 @@ class UC005ViewMonthlyTimesheet extends SpringBrowserlessTest {
         assertTrue(grid.isVisible());
         assertEquals(0, dayRows(view).size(), "The timeline is hidden");
         assertEquals(30, test(grid).size());
-        assertEquals(List.of("Tue, 1 Sep", "8:00 AM – 12:00 PM  ·  1:00 PM – 5:00 PM", "8h 0m", "1h 0m"),
+        assertEquals(List.of("Tue, 1 Sep", "8:00 AM – 12:00 PM · 1:00 PM – 5:00 PM", "8h 0m", "1h 0m"),
                 row(grid, 0));
         assertEquals(List.of("Sat, 5 Sep\nWeekend", "", "", ""), row(grid, 4));
         assertEquals("Tue, 15 Sep\nPublic holiday: Founders Day", row(grid, 14).get(0));

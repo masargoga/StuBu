@@ -11,6 +11,7 @@ import com.stubu.specdriven.monthlytimesheet.MonthlyTimesheetView;
 import com.stubu.specdriven.security.EmployeePrincipal;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
+import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H1;
@@ -61,9 +62,12 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
         authenticationContext.getAuthenticatedUser(Object.class).ifPresent(principal -> {
             String name = principal instanceof EmployeePrincipal employee ? employee.getFullName()
                     : authenticationContext.getPrincipalName().orElse("");
+            Avatar avatar = new Avatar(name);
+            avatar.addClassName("app-avatar");
+            avatar.getElement().setAttribute("aria-hidden", "true");
             Span userName = new Span(name);
             userName.addClassName("app-user-name");
-            user.add(userName);
+            user.add(avatar, userName);
         });
         signOut = new Button();
         signOut.addClickListener(event -> authenticationContext.logout());
@@ -71,12 +75,16 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
         signOut.setTestId("sign-out");
         user.add(signOut);
 
-        HorizontalLayout navbar = new HorizontalLayout(title, user);
+        HorizontalLayout brand = new HorizontalLayout(AppLogo.create(), title);
+        brand.addClassName("app-brand");
+        brand.setAlignItems(FlexComponent.Alignment.CENTER);
+        brand.setSpacing(false);
+        HorizontalLayout navbar = new HorizontalLayout(brand, user);
         navbar.addClassName("app-navbar");
         navbar.setWidthFull();
         navbar.setAlignItems(FlexComponent.Alignment.CENTER);
         navbar.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
-        navbar.expand(title);
+        navbar.expand(brand);
         drawerToggle.setTestId("drawer-toggle");
         addToNavbar(drawerToggle, navbar);
 

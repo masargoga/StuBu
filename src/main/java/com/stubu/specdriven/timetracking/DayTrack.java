@@ -8,16 +8,16 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
 
-/** Draws work periods as bars on a 24 hour track: a line with a dot at each end, dashed while still open. */
+/** Draws work periods as bars on a track that shows the {@link TimelineWindow} of the day; a bar is striped while its period is still open. */
 public final class DayTrack {
 
     private DayTrack() {
     }
 
     /** A track for one day with a bar for every period. */
-    public static Div forDay(List<TimeEntry> entries, LocalDate date, ZoneId zone, Instant now) {
-        Instant dayStart = date.atStartOfDay(zone).toInstant();
-        Instant dayEnd = date.plusDays(1).atStartOfDay(zone).toInstant();
+    public static Div forDay(List<TimeEntry> entries, LocalDate date, ZoneId zone, Instant now, TimelineWindow window) {
+        Instant dayStart = window.startOn(date, zone);
+        Instant dayEnd = window.endOn(date, zone);
         Div track = new Div();
         track.addClassName("timeline-track");
         track.getElement().setAttribute("aria-hidden", "true");
@@ -25,7 +25,7 @@ public final class DayTrack {
         return track;
     }
 
-    /** The bar of one period, positioned and sized as a share of the day. */
+    /** The bar of one period, positioned and sized as a share of the visible time span. */
     public static Div bar(TimeEntry entry, Instant dayStart, Instant dayEnd, Instant now) {
         Instant end = entry.isActive() ? now : entry.getCheckOutAt();
         double dayLength = Duration.between(dayStart, dayEnd).toMillis();
@@ -39,7 +39,7 @@ public final class DayTrack {
         return bar;
     }
 
-    /** The shared 00-24 hour scale. */
+    /** A share of the visible time span as a CSS percentage. */
     public static String percent(double fraction) {
         return String.format(Locale.ROOT, "%.3f%%", fraction * 100);
     }

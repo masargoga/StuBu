@@ -172,7 +172,7 @@ Employee clicks "Check In" button to start a new work period or "Check Out" butt
 
 - **Time Tracking Panel:** Shows the current working status, today's date, today's timeline with all time entries, and total worked and break time. It is part of the home page after login.
 - **Check-In / Check-Out Buttons:** Large, prominent buttons to start/end work periods. Both stay available; the one that fits the current status is emphasized.
-- **Timeline Display:** Shows the day's time entries as bars on a 24 hour scale with check-in and check-out times, duration, and status (open periods look different from completed ones).
+- **Timeline Display:** Shows the day's time entries as bars on a time scale that covers 06:00 to 20:00 and grows in whole hours when a period starts earlier or ends later (design refresh: the full 00-24 scale made the bars too small; every period is always fully visible), with check-in and check-out times, duration, and status (open periods look different from completed ones).
 - **Messages:** Success and error messages displayed prominently and announced to screen readers.
 - **Dialogs:** Replace check-in confirmation (AF-1); missing check-in time entry with date and time (AF-2).
 

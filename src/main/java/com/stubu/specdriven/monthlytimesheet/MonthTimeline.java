@@ -4,6 +4,7 @@ import com.stubu.specdriven.timetracking.DayTrack;
 import com.stubu.specdriven.timetracking.DurationFormat;
 import com.stubu.specdriven.timetracking.TimeEntry;
 import com.stubu.specdriven.timetracking.TimeFormats;
+import com.stubu.specdriven.timetracking.TimelineWindow;
 import com.vaadin.flow.component.badge.Badge;
 import com.vaadin.flow.component.badge.BadgeVariant;
 import com.vaadin.flow.component.button.Button;
@@ -20,13 +21,11 @@ import java.time.format.FormatStyle;
 import java.util.Locale;
 
 /**
- * The timeline view of a monthly timesheet: one row per calendar day with the day's work periods drawn on a
- * 00-24 hour scale, the daily total and break time, and weekends and public holidays marked with text (not only
+ * The timeline view of a monthly timesheet: one row per calendar day with the work periods of the day drawn on one
+ * shared scale (see {@link TimelineWindow}), the daily total and break time, and weekends and public holidays marked with text (not only
  * colour). Work periods can be corrected or deleted while the timesheet is a draft.
  */
 public class MonthTimeline extends Div {
-
-    private static final int[] AXIS_HOURS = { 0, 4, 8, 12, 16, 20, 24 };
 
     private boolean readOnly;
     private SerializableConsumer<LocalDate> dayHandler;
@@ -59,13 +58,16 @@ public class MonthTimeline extends Div {
         removeAll();
         Locale locale = getLocale();
 
+        TimelineWindow window = sheet.days().stream()
+                .map(line -> TimelineWindow.forDay(line.date(), line.day().entries(), zone, now))
+                .reduce(TimelineWindow.DEFAULT, TimelineWindow::union);
         Div axis = new Div();
         axis.addClassName("month-axis");
         axis.getElement().setAttribute("aria-hidden", "true");
-        for (int hour : AXIS_HOURS) {
+        for (int hour : window.ticks()) {
             Span tick = new Span(String.format("%02d", hour));
             tick.addClassName("timeline-tick");
-            tick.getStyle().set("left", DayTrack.percent(hour / 24.0));
+            tick.getStyle().set("left", DayTrack.percent(window.fraction(hour)));
             axis.add(tick);
         }
 
@@ -73,11 +75,12 @@ public class MonthTimeline extends Div {
         rows.addClassName("month-rows");
         rows.getElement().setAttribute("role", "list");
         rows.getElement().setAttribute("aria-label", getTranslation("timesheet.timeline.label"));
-        sheet.days().forEach(line -> rows.add(row(line, sheet.editable() && !readOnly, zone, now, today, locale)));
+        sheet.days().forEach(line -> rows.add(row(line, sheet.editable() && !readOnly, zone, now, today, locale, window)));
         add(axis, rows);
     }
 
-    private Div row(DayLine line, boolean editable, ZoneId zone, Instant now, LocalDate today, Locale locale) {
+    private Div row(DayLine line, boolean editable, ZoneId zone, Instant now, LocalDate today, Locale locale,
+            TimelineWindow window) {
         LocalDate date = line.date();
         boolean hasEntries = !line.day().entries().isEmpty();
 
@@ -127,7 +130,7 @@ public class MonthTimeline extends Div {
                 .withLocale(locale)) + (line.weekend() ? ", " + getTranslation("timesheet.weekend") : "")
                 + (line.isHoliday() ? ", " + getTranslation("timesheet.holiday", line.holidayName()) : ""));
         if (hasEntries) {
-            row.add(DayTrack.forDay(line.day().entries(), date, zone, now));
+            row.add(DayTrack.forDay(line.day().entries(), date, zone, now, window));
             line.day().entries().forEach(entry -> row.add(period(entry, editable, zone, now, date, locale)));
         }
         return row;

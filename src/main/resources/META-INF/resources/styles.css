@@ -826,7 +826,12 @@ vaadin-grid::part(holiday-cell) {
 .manage-head,
 .manage-view .approval-head,
 .manage-view .approval-row {
-  grid-template-columns: 1.4fr 2.2fr 1fr 1.2fr 1.4fr 0.8fr 1.5fr 21rem;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.4fr) minmax(0, 0.8fr)
+      minmax(0, 1.5fr) 21rem;
+}
+
+.manage-view .approval-cell {
+  overflow-wrap: anywhere;
 }
 
 .manage-actions {
@@ -1108,4 +1113,492 @@ vaadin-grid::part(holiday-cell) {
 .detail-info {
   box-sizing: border-box;
   width: 100%;
+}
+
+
+/* =====================================================================================================
+ * Design refresh: green accent, light and airy. These rules come last and refine the rules above.
+ * Colours come from the Aura tokens; the only literal colour is the brand green (also in the icon mark).
+ * ===================================================================================================== */
+html {
+  --stubu-green: #0e7a4b;
+  --stubu-green-soft: color-mix(in srgb, var(--stubu-green) 8%, var(--aura-background-color));
+  --stubu-green-line: color-mix(in srgb, var(--stubu-green) 28%, var(--aura-background-color));
+  --aura-accent-color-light: var(--stubu-green);
+  --aura-accent-color-dark: #4fc98f;
+  --aura-background-color-light: #fbfcfb;
+  --aura-app-background: linear-gradient(180deg, #f3f7f4 0%, #f8faf8 100%);
+  --aura-base-radius: 8;
+  --stubu-card-shadow: 0 1px 2px color-mix(in srgb, var(--aura-neutral) 8%, transparent),
+      0 4px 16px color-mix(in srgb, var(--aura-neutral) 5%, transparent);
+}
+
+/* More breathing room on screens that have it. */
+@media (min-width: 800px) {
+  html {
+    --aura-base-size: 18;
+  }
+}
+
+/* --- Header ----------------------------------------------------------------------------------------- */
+.app-brand {
+  gap: var(--vaadin-gap-m);
+  min-width: 0;
+}
+
+.app-logo {
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.6rem;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--stubu-green) 35%, transparent);
+}
+
+.app-title {
+  font-size: var(--aura-font-size-xl);
+  font-weight: var(--aura-font-weight-semibold);
+  letter-spacing: -0.01em;
+}
+
+.app-avatar {
+  --vaadin-avatar-size: 2.25rem;
+  background: var(--stubu-green-soft);
+  color: var(--aura-accent-text-color);
+  font-weight: var(--aura-font-weight-semibold);
+}
+
+.app-user-name {
+  color: var(--vaadin-text-color);
+}
+
+@media (max-width: 640px) {
+  .app-user-name {
+    display: none;
+  }
+
+  .app-title {
+    font-size: var(--aura-font-size-l);
+  }
+}
+
+/* --- Navigation ------------------------------------------------------------------------------------- */
+.app-navigation vaadin-side-nav-item::part(content) {
+  border-radius: var(--vaadin-radius-m);
+}
+
+.app-navigation vaadin-side-nav-item[current]::part(content) {
+  background: var(--stubu-green-soft);
+  color: var(--aura-accent-text-color);
+  font-weight: var(--aura-font-weight-semibold);
+}
+
+/* --- Login ------------------------------------------------------------------------------------------ */
+.login-card {
+  align-items: stretch;
+  max-width: 30rem;
+  padding: calc(var(--vaadin-padding-xl) * 1.4);
+  border-color: var(--stubu-green-line);
+  border-radius: calc(var(--vaadin-radius-l) * 1.5);
+  box-shadow: var(--stubu-card-shadow);
+}
+
+.login-card .app-logo {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 1rem;
+  margin-bottom: var(--vaadin-gap-s);
+}
+
+.login-card h1 {
+  font-size: calc(var(--aura-font-size-xl) * 1.5);
+  letter-spacing: -0.02em;
+}
+
+.login-provider-button {
+  position: relative;
+  gap: var(--vaadin-gap-m);
+  min-height: 3.75rem;
+  background: var(--aura-surface-color-solid);
+  box-shadow: var(--aura-shadow-xs);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.login-provider-button:hover {
+  background: var(--stubu-green-soft);
+  border-color: var(--stubu-green-line);
+}
+
+/* The logo of the provider in front of the text; the text itself stays the name of the button. */
+.login-provider-button[data-provider]::before {
+  content: "";
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: center / contain no-repeat;
+}
+
+.login-provider-button[data-provider="google"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath fill='%23EA4335' d='M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z'/%3E%3Cpath fill='%234285F4' d='M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z'/%3E%3Cpath fill='%23FBBC05' d='M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z'/%3E%3Cpath fill='%2334A853' d='M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z'/%3E%3C/svg%3E");
+}
+
+.login-provider-button[data-provider="microsoft"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 23 23'%3E%3Cpath fill='%23f25022' d='M1 1h10v10H1z'/%3E%3Cpath fill='%237fba00' d='M12 1h10v10H12z'/%3E%3Cpath fill='%2300a4ef' d='M1 12h10v10H1z'/%3E%3Cpath fill='%23ffb900' d='M12 12h10v10H12z'/%3E%3C/svg%3E");
+}
+
+/* --- Home and time tracking ------------------------------------------------------------------------- */
+.home-view,
+.timesheet-view,
+.manage-view {
+  max-width: 80rem;
+  width: 100%;
+}
+
+.home-welcome {
+  font-size: calc(var(--aura-font-size-xl) * 1.45);
+  font-weight: var(--aura-font-weight-semibold);
+  letter-spacing: -0.02em;
+}
+
+.home-description {
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-l);
+}
+
+.time-tracking {
+  gap: var(--vaadin-gap-l);
+}
+
+/* The status card: state and time on the left, the two actions on the right. */
+.time-hero,
+.time-card,
+.timesheet-status {
+  box-sizing: border-box;
+  border: 1px solid var(--vaadin-border-color-secondary);
+  border-radius: var(--vaadin-radius-l);
+  background: var(--aura-surface-color-solid);
+  box-shadow: var(--stubu-card-shadow);
+}
+
+.time-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vaadin-gap-l) var(--vaadin-gap-xl);
+  width: 100%;
+  padding: var(--vaadin-padding-xl);
+}
+
+.time-hero-text {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.time-status {
+  display: flex;
+  align-items: center;
+  gap: var(--vaadin-gap-s);
+  font-size: var(--aura-font-size-xl);
+  font-weight: var(--aura-font-weight-medium);
+  color: var(--vaadin-text-color-secondary);
+}
+
+.time-status-working {
+  color: var(--aura-accent-text-color);
+}
+
+.time-status-working::before {
+  content: "";
+  flex: none;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: var(--aura-accent-color);
+  box-shadow: 0 0 0 0.3rem color-mix(in srgb, var(--aura-accent-color) 20%, transparent);
+}
+
+.time-clock {
+  align-items: baseline;
+  margin: var(--vaadin-gap-xs) 0 0;
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-l);
+}
+
+.time-clock .time-current {
+  color: var(--vaadin-text-color);
+  font-size: var(--aura-font-size-xl);
+  font-weight: var(--aura-font-weight-semibold);
+}
+
+.time-clock .time-elapsed {
+  color: var(--aura-accent-text-color);
+  font-size: var(--aura-font-size-xl);
+  font-weight: var(--aura-font-weight-semibold);
+}
+
+.time-hero .time-actions {
+  display: flex;
+  flex: 0 1 auto;
+  width: auto;
+  gap: var(--vaadin-gap-m);
+}
+
+.time-hero vaadin-button.time-action {
+  width: auto;
+  min-width: 11rem;
+  min-height: 4rem;
+  border-radius: var(--vaadin-radius-l);
+  font-size: calc(var(--aura-font-size-xl) * 1.15);
+  font-weight: var(--aura-font-weight-semibold);
+}
+
+/* The action that is not possible right now steps back, so the next step is obvious. */
+.time-hero vaadin-button.time-action:not([theme~="primary"]) {
+  background: transparent;
+  box-shadow: none;
+  border: 1px solid var(--vaadin-border-color);
+  color: var(--vaadin-text-color-secondary);
+}
+
+.time-hero vaadin-button.time-action vaadin-icon {
+  width: 1.2em;
+  height: 1.2em;
+}
+
+@media (max-width: 640px) {
+  .time-hero {
+    padding: var(--vaadin-padding-l);
+  }
+
+  .time-hero .time-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .time-hero vaadin-button.time-action {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+/* Summary tiles. */
+.time-totals {
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--vaadin-gap-l);
+  margin-top: 0;
+  font-size: var(--aura-font-size-xl);
+  font-weight: var(--aura-font-weight-medium);
+}
+
+.time-totals > .time-total {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--vaadin-gap-xs);
+  min-width: 0;
+  padding: var(--vaadin-padding-l) var(--vaadin-padding-xl);
+  border: 1px solid var(--vaadin-border-color-secondary);
+  border-radius: var(--vaadin-radius-l);
+  background: var(--aura-surface-color-solid);
+  box-shadow: var(--stubu-card-shadow);
+}
+
+.time-tile-label {
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-l);
+  font-weight: var(--aura-font-weight-regular);
+}
+
+.time-tile-value {
+  font-size: calc(var(--aura-font-size-xl) * 1.6);
+  font-weight: var(--aura-font-weight-semibold);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.time-total-detail {
+  margin-top: calc(var(--vaadin-gap-s) * -1);
+  padding-inline: var(--vaadin-padding-s);
+}
+
+.time-card {
+  width: 100%;
+  padding: var(--vaadin-padding-xl);
+}
+
+.time-card-title {
+  display: block;
+  margin-bottom: var(--vaadin-gap-m);
+  font-size: var(--aura-font-size-xl);
+  font-weight: var(--aura-font-weight-semibold);
+}
+
+.time-empty {
+  border-color: var(--stubu-green-line);
+  border-radius: var(--vaadin-radius-l);
+  background: var(--stubu-green-soft);
+  color: var(--vaadin-text-color);
+}
+
+/* --- Timeline: solid blocks on a soft track; an open period is striped ----------------------------- */
+.timeline {
+  margin-top: 0;
+}
+
+.timeline-axis,
+.month-axis {
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-s);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-row {
+  padding-block: var(--vaadin-padding-m);
+  border-top: 1px solid var(--vaadin-border-color-secondary);
+}
+
+.timeline-row:first-child {
+  border-top: 0;
+}
+
+.timeline-track {
+  height: 1.75rem;
+  border-radius: var(--vaadin-radius-m);
+  background: var(--vaadin-background-container);
+  background-image: none;
+}
+
+.timeline-bar {
+  top: 0;
+  bottom: 0;
+  height: auto;
+  min-width: 0.5rem;
+  transform: none;
+  border-radius: var(--vaadin-radius-m);
+  background: var(--aura-accent-color);
+}
+
+.timeline-bar::before,
+.timeline-bar::after {
+  content: none;
+}
+
+.timeline-bar-open {
+  background: repeating-linear-gradient(135deg, var(--aura-accent-color) 0, var(--aura-accent-color) 0.5rem,
+      color-mix(in srgb, var(--aura-accent-color) 55%, var(--aura-background-color)) 0.5rem,
+      color-mix(in srgb, var(--aura-accent-color) 55%, var(--aura-background-color)) 1rem);
+  box-shadow: inset -3px 0 0 var(--aura-accent-color);
+}
+
+.timeline-label {
+  font-size: var(--aura-font-size-xl);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Month view -------------------------------------------------------------------------------------- */
+.timesheet-status {
+  padding: var(--vaadin-padding-xl);
+}
+
+.timesheet-view h2,
+.manage-view h2 {
+  font-size: calc(var(--aura-font-size-xl) * 1.5);
+  font-weight: var(--aura-font-weight-semibold);
+  letter-spacing: -0.02em;
+}
+
+.month-timeline {
+  padding: var(--vaadin-padding-m) var(--vaadin-padding-s);
+  border: 1px solid var(--vaadin-border-color-secondary);
+  border-radius: var(--vaadin-radius-l);
+  background: var(--aura-surface-color-solid);
+  box-shadow: var(--stubu-card-shadow);
+}
+
+.day-row {
+  border-bottom-color: var(--vaadin-border-color-secondary);
+  border-radius: var(--vaadin-radius-s);
+  transition: background-color 0.12s;
+}
+
+.day-row:not(.day-weekend):not(.day-holiday):hover {
+  background-color: var(--stubu-green-soft);
+}
+
+.day-current {
+  border-inline-start-width: 4px;
+  background-color: var(--stubu-green-soft);
+}
+
+.day-tag {
+  border-color: transparent;
+  border-radius: 999px;
+  background: var(--vaadin-background-container);
+  color: var(--vaadin-text-color);
+}
+
+.day-label {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Lists and tables: quiet rows, a soft header ---------------------------------------------------- */
+.approvals-list {
+  gap: var(--vaadin-gap-xs);
+}
+
+.approval-head {
+  padding-block: var(--vaadin-padding-xs);
+  border-bottom: 1px solid var(--vaadin-border-color-secondary);
+  font-size: var(--aura-font-size-s);
+  font-weight: var(--aura-font-weight-semibold);
+  letter-spacing: 0.02em;
+}
+
+.approval-row {
+  border-color: var(--vaadin-border-color-secondary);
+  border-radius: var(--vaadin-radius-l);
+  background: var(--aura-surface-color-solid);
+  box-shadow: var(--aura-shadow-xs);
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.approval-row:hover {
+  border-color: var(--stubu-green-line);
+  box-shadow: var(--stubu-card-shadow);
+}
+
+.employee-inactive {
+  background: var(--vaadin-background-container);
+}
+
+/* Dialogs and forms. */
+vaadin-dialog::part(overlay) {
+  border-radius: var(--vaadin-radius-l);
+}
+
+/* The month totals sit next to each other in compact tiles. */
+.timesheet-view .time-totals,
+.review-view .time-totals,
+.employee-timesheet-view .time-totals {
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 18rem));
+}
+
+/* The employee list uses the whole width; its actions are quiet text buttons now. */
+.manage-view {
+  max-width: none;
+}
+
+.manage-head,
+.manage-view .approval-head,
+.manage-view .approval-row {
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 2.4fr) minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 1.3fr) minmax(0, 0.8fr)
+      minmax(0, 1.4fr) 16rem;
+}
+
+.manage-view .approval-cell {
+  overflow-wrap: break-word;
 }

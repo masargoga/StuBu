@@ -22,6 +22,9 @@ within a few seconds and sign in again.
 * Already checked in and press Check In again? You are asked whether to **replace** the check-in time.
 * Forgot to check in? Press Check Out and enter **when you started**.
 * Note that the times come from the server, not from your device's clock.
+* The top card shows whether you are working, the current time and how long you have been working; the tiles below it
+  show the total, the break and your first check-in of the day. "Your day" draws each work period as a green block
+  (striped while it is still open) between 6:00 and 20:00; the scale widens when you worked earlier or later.
 
 ### Correcting earlier days
 

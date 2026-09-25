@@ -77,6 +77,9 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
     private final WorkTimeline timeline = new WorkTimeline();
     private final Span worked = new Span();
     private final Span breaks = new Span();
+    private final Span firstIn = new Span();
+    private final Div heroText = new Div();
+    private final Span dayHeading = new Span();
     private final Div workedDetail = new Div();
 
     /**
@@ -99,7 +102,6 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
         checkOut.addClickListener(event -> checkOut());
         HorizontalLayout actions = new HorizontalLayout(checkIn, checkOut);
         actions.addClassName("time-actions");
-        actions.setWidthFull();
 
         status.addClassName("time-status");
         status.getElement().setAttribute("role", "status");
@@ -110,21 +112,40 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
         elapsed.setTestId("elapsed-time");
         Div clock = new Div(date, currentTime, elapsed);
         clock.addClassName("time-clock");
+        heroText.add(status, clock);
+        heroText.addClassName("time-hero-text");
+        Div hero = new Div(heroText, actions);
+        hero.addClassName("time-hero");
         emptyHint.addClassName("time-empty");
-        worked.addClassName("time-total");
+        worked.addClassNames("time-total", "time-tile");
         worked.setTestId("total-worked");
-        breaks.addClassName("time-total");
-        Div totals = new Div(worked, breaks);
+        breaks.addClassNames("time-total", "time-tile");
+        firstIn.addClassNames("time-total", "time-tile");
+        firstIn.setTestId("first-check-in");
+        Div totals = new Div(worked, breaks, firstIn);
         totals.addClassName("time-totals");
+        dayHeading.addClassName("time-card-title");
+        Div timelineCard = new Div(dayHeading, emptyHint, timeline);
+        timelineCard.addClassNames("time-card", "time-day-card");
         workedDetail.addClassName("time-total-detail");
 
         timeline.setEntryActions(this::openEditDialog, this::openDeleteDialog);
         day.setPadding(false);
         day.setSpacing(true);
-        day.add(status, clock, emptyHint, timeline, totals, workedDetail);
+        day.add(totals, timelineCard, workedDetail);
 
-        add(actions, messageBox, loadErrorBox, day);
+        add(hero, messageBox, loadErrorBox, day);
         load();
+    }
+
+    /** A summary tile: a small label above a large value. */
+    private static void tile(Span tile, String label, String value) {
+        Span labelText = new Span(label + " "); // the space keeps "label value" readable as one text
+        labelText.addClassName("time-tile-label");
+        Span valueText = new Span(value);
+        valueText.addClassName("time-tile-value");
+        tile.removeAll();
+        tile.add(labelText, valueText);
     }
 
     private static void configureAction(Button button, String testId, VaadinIcon icon) {
@@ -392,6 +413,7 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
         loadErrorBox.update(loadFailed, getTranslation("time.loadFailed"), getTranslation("time.retry"));
         boolean showDay = !loadFailed && summary != null;
         day.setVisible(showDay);
+        heroText.setVisible(showDay);
         if (!showDay) {
             return;
         }
@@ -412,8 +434,13 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
         emptyHint.setVisible(empty);
         timeline.show(summary, zone, now);
 
-        worked.setText(getTranslation("time.worked", DurationFormat.format(summary.worked())));
-        breaks.setText(getTranslation("time.break", DurationFormat.format(summary.breaks())));
+        dayHeading.setText(getTranslation("time.day.title"));
+        tile(worked, getTranslation("time.worked.label"), DurationFormat.format(summary.worked()));
+        tile(breaks, getTranslation("time.break.label"), DurationFormat.format(summary.breaks()));
+        firstIn.setVisible(!empty);
+        if (!empty) {
+            tile(firstIn, getTranslation("time.firstIn.label"), TimeFormats.time(summary.entries().get(0).getCheckInAt(), zone, locale));
+        }
         workedDetail.setVisible(working);
         workedDetail.setText(getTranslation("time.worked.detail", DurationFormat.format(summary.completed()),
                 DurationFormat.format(summary.openElapsed())));

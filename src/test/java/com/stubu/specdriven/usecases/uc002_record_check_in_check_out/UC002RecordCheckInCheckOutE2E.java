@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.options.AriaRole;
 import com.stubu.specdriven.testsupport.E2ETest;
+import com.stubu.specdriven.timetracking.TimelineWindow;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -23,6 +24,9 @@ import org.junit.jupiter.params.provider.MethodSource;
  * clock is controlled by the test (it starts on 2026-09-23 08:03:14 UTC, the browser also reports UTC).
  */
 class UC002RecordCheckInCheckOutE2E extends E2ETest {
+
+    /** The timeline shows 06:00 to 20:00 unless a period needs more. */
+    private static final int WINDOW_HOURS = TimelineWindow.DEFAULT_END - TimelineWindow.DEFAULT_START;
 
     static Stream<Viewport> viewports() {
         return Stream.of(DESKTOP, TABLET, MOBILE);
@@ -183,8 +187,8 @@ class UC002RecordCheckInCheckOutE2E extends E2ETest {
     /** The bar starts and is as long as expected, as fractions of the track (a 24 hour day). */
     private static void assertBar(Locator bar, double[] track, double startMinute, double lengthMinutes) {
         var box = bar.boundingBox();
-        double left = (box.x - track[0]) / track[2] * 24 * 60;
-        double width = box.width / track[2] * 24 * 60;
+        double left = TimelineWindow.DEFAULT_START * 60 + (box.x - track[0]) / track[2] * WINDOW_HOURS * 60;
+        double width = box.width / track[2] * WINDOW_HOURS * 60;
         assertEquals(startMinute, left, 6.0, "Bar starts at " + startMinute + " minutes into the day");
         assertEquals(lengthMinutes, width, 6.0, "Bar is " + lengthMinutes + " minutes long");
     }

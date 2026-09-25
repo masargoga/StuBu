@@ -196,7 +196,7 @@ class UC002RecordCheckInCheckOut extends SpringBrowserlessTest {
     }
 
     @Test
-    void mainFlow_timelineShowsAPeriodAsBarOnA24HourScale() {
+    void mainFlow_timelineShowsAPeriodAsBarInTheVisibleTimeSpan() {
         service.checkIn(alice);
         clock.advance(Duration.ofHours(4)); // 08:03:14 - 12:03:14
 
@@ -205,8 +205,8 @@ class UC002RecordCheckInCheckOut extends SpringBrowserlessTest {
         Div bar = find(Div.class).all().stream().filter(d -> d.hasClassName("timeline-bar")).findFirst().orElseThrow();
         String left = bar.getStyle().get("left");
         String width = bar.getStyle().get("width");
-        assertEquals("33.558%", left, "08:03:14 is 33.558% into the day");
-        assertEquals("16.667%", width, "4 hours are one sixth of the day");
+        assertEquals("14.671%", left, "08:03:14 is 14.671% into the 06-20 window");
+        assertEquals("28.571%", width, "4 hours are 4/14 of the 06-20 window");
     }
 
     // --- AF-1: Check-In When Already Active ------------------------------------------------------

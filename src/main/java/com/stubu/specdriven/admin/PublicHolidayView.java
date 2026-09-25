@@ -176,7 +176,7 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
             Div actions = new Div();
             actions.addClassNames("approval-cell", "manage-actions");
             actions.getElement().setAttribute("role", "cell");
-            Button edit = action("holidays.edit", "edit-holiday", holiday, ButtonVariant.PRIMARY);
+            Button edit = action("holidays.edit", "edit-holiday", holiday, ButtonVariant.TERTIARY);
             edit.addClickListener(event -> openForm(holiday));
             Button delete = action("holidays.delete", "delete-holiday", holiday, ButtonVariant.ERROR,
                     ButtonVariant.TERTIARY);

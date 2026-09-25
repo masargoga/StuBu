@@ -309,7 +309,7 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
         Div actions = new Div();
         actions.addClassNames("approval-cell", "manage-actions");
         actions.getElement().setAttribute("role", "cell");
-        Button edit = action("manage.edit", "edit-employee", employee, ButtonVariant.PRIMARY);
+        Button edit = action("manage.edit", "edit-employee", employee, ButtonVariant.TERTIARY);
         edit.addClickListener(event -> openForm(employee));
         actions.add(edit);
         Button details = action("manage.details", "employee-details", employee, ButtonVariant.TERTIARY);

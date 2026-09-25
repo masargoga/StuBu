@@ -13,6 +13,7 @@ import com.stubu.specdriven.holiday.PublicHolidayRepository;
 import com.stubu.specdriven.testsupport.E2ETest;
 import com.stubu.specdriven.timesheet.TimesheetService;
 import com.stubu.specdriven.timetracking.TimeEntryService;
+import com.stubu.specdriven.timetracking.TimelineWindow;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -32,6 +33,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * behind it is covered by {@code UC005ViewMonthlyTimesheet}. It is 2026-09-23 17:00 UTC (browser and server).
  */
 class UC005ViewMonthlyTimesheetE2E extends E2ETest {
+
+    /** The timeline shows 06:00 to 20:00 unless a period needs more. */
+    private static final int WINDOW_HOURS = TimelineWindow.DEFAULT_END - TimelineWindow.DEFAULT_START;
 
     private static final Instant NOW = Instant.parse("2026-09-23T17:00:00Z");
 
@@ -236,12 +240,12 @@ class UC005ViewMonthlyTimesheetE2E extends E2ETest {
                 List.of(selector, property));
     }
 
-    /** The bar starts and is as long as expected (minutes of the day), within a small tolerance. */
+    /** The bar starts and is as long as expected (minutes of the day, on the 06-20 window), within a small tolerance. */
     private static void assertBar(Locator bar, com.microsoft.playwright.options.BoundingBox track, double startMinute,
             double lengthMinutes) {
         var box = bar.boundingBox();
-        assertEquals(startMinute, (box.x - track.x) / track.width * 24 * 60, 8.0, "Bar start");
-        assertEquals(lengthMinutes, box.width / track.width * 24 * 60, 8.0, "Bar length");
+        assertEquals(startMinute, TimelineWindow.DEFAULT_START * 60 + (box.x - track.x) / track.width * WINDOW_HOURS * 60, 8.0, "Bar start");
+        assertEquals(lengthMinutes, box.width / track.width * WINDOW_HOURS * 60, 8.0, "Bar length");
         assertTrue(box.width > 0);
     }
 }

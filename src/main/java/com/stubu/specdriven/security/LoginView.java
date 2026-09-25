@@ -55,7 +55,8 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver, Ha
         providerButtons.setPadding(false);
         providerButtons.setSpacing(true);
 
-        VerticalLayout card = new VerticalLayout(title, intro, message, providerButtons);
+        VerticalLayout card = new VerticalLayout(com.stubu.specdriven.base.AppLogo.create(), title, intro, message,
+                providerButtons);
         card.addClassNames("login-card", "aura-surface-solid");
         card.setPadding(true);
         card.setSpacing(true);
@@ -102,6 +103,8 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver, Ha
         // Full page navigation to Spring Security, not a client-side route.
         button.setRouterIgnore(true);
         button.addClassName("login-provider-button");
+        // The logo of the provider is drawn by the stylesheet (login-provider-button[data-provider=...]).
+        button.getElement().setAttribute("data-provider", registration.getRegistrationId());
         button.setTestId("login-" + registration.getRegistrationId());
         return button;
     }

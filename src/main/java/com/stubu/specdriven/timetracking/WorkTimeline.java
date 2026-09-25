@@ -15,16 +15,13 @@ import java.util.Locale;
 
 /**
  * Timeline of one day's work periods. Every period is a row with a text description (readable by screen
- * readers), its status and an edit control, and a bar on a 24 hour scale; the bar starts and ends with a dot
- * so check-in and check-out are visibly connected, and an open period is drawn differently from a completed
- * one.
+ * readers), its status and edit controls, and a bar on a scale that shows the part of the day that matters (see
+ * {@link TimelineWindow}); an open period is drawn differently from a completed one.
  *
  * <p>Every row has Edit and Delete controls; they are disabled, with an explanation, once the timesheet of the
  * entry was submitted.
  */
 public class WorkTimeline extends Div {
-
-    private static final int[] AXIS_HOURS = { 0, 4, 8, 12, 16, 20, 24 };
 
     private boolean readOnly;
     private SerializableConsumer<Long> editHandler = id -> {
@@ -51,16 +48,17 @@ public class WorkTimeline extends Div {
     public void show(DaySummary day, ZoneId zone, Instant now) {
         removeAll();
         Locale locale = getLocale();
-        Instant dayStart = day.date().atStartOfDay(zone).toInstant();
-        Instant dayEnd = day.date().plusDays(1).atStartOfDay(zone).toInstant();
+        TimelineWindow window = TimelineWindow.forDay(day.date(), day.entries(), zone, now);
+        Instant dayStart = window.startOn(day.date(), zone);
+        Instant dayEnd = window.endOn(day.date(), zone);
 
         Div axis = new Div();
         axis.addClassName("timeline-axis");
         axis.getElement().setAttribute("aria-hidden", "true");
-        for (int hour : AXIS_HOURS) {
+        for (int hour : window.ticks()) {
             Span tick = new Span(String.format("%02d", hour));
             tick.addClassName("timeline-tick");
-            tick.getStyle().set("left", DayTrack.percent(hour / 24.0));
+            tick.getStyle().set("left", DayTrack.percent(window.fraction(hour)));
             axis.add(tick);
         }
 

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <title>StuBu</title>
+  <rect width="48" height="48" rx="12" fill="#0e7a4b"/>
+  <circle cx="24" cy="24" r="13" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="4"/>
+  <path d="M24 11A13 13 0 0 1 35.26 30.5" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+  <path d="M24 17.5V24L28.5 27" fill="none" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
