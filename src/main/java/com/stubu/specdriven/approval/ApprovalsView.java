@@ -47,9 +47,12 @@ public class ApprovalsView extends VerticalLayout implements HasDynamicTitle, Lo
     private ZoneId zone;
     private transient List<PendingApproval> pending = List.of();
     private boolean loadFailed;
+    private ReviewScope scope = ReviewScopePreference.get();
+    private transient ScopeOptions options;
     private FlashMessage message;
 
     private final H2 heading = new H2();
+    private final ScopeSwitcher scopeSwitcher = new ScopeSwitcher();
     private final Div messageBox = new Div();
     private final Div loadErrorBox = new Div();
     private final Span loadError = new Span();
@@ -87,7 +90,8 @@ public class ApprovalsView extends VerticalLayout implements HasDynamicTitle, Lo
         list.setTestId("approvals");
         list.getElement().setAttribute("role", "table");
 
-        add(heading, messageBox, loadErrorBox, emptyHint, list);
+        add(heading, messageBox, loadErrorBox, scopeSwitcher, emptyHint, list);
+        scopeSwitcher.addScopeListener(this::switchScope);
         load();
     }
 
@@ -117,12 +121,30 @@ public class ApprovalsView extends VerticalLayout implements HasDynamicTitle, Lo
             return;
         }
         try {
-            pending = service.pending(reviewerId, ReviewScope.DIRECT_REPORTS);
+            options = service.scopeOptions(reviewerId);
+            if (scope == ReviewScope.DEPARTMENT && !options.departmentAvailable()) {
+                scope = ReviewScope.DIRECT_REPORTS;
+            }
+            pending = service.pending(reviewerId, scope);
             loadFailed = false;
         } catch (DataAccessException e) {
             log.error("Could not load the pending approvals of reviewer {}", reviewerId, e);
             loadFailed = true;
         }
+    }
+
+    /** The manager picked another scope: show it, or keep the previous one if it cannot be loaded (AF-3). */
+    private void switchScope(ReviewScope newScope) {
+        try {
+            pending = service.pending(reviewerId, newScope);
+            scope = newScope;
+            ReviewScopePreference.set(scope);
+            message = null;
+        } catch (DataAccessException e) {
+            log.error("Could not load the pending approvals of reviewer {} for {}", reviewerId, newScope, e);
+            message = new FlashMessage("scope.loadFailed", true);
+        }
+        render();
     }
 
     @Override
@@ -151,6 +173,10 @@ public class ApprovalsView extends VerticalLayout implements HasDynamicTitle, Lo
             messageBox.setVisible(true);
         }
 
+        scopeSwitcher.setVisible(!loadFailed && options != null);
+        if (options != null) {
+            scopeSwitcher.update(options, scope);
+        }
         loadError.setText(getTranslation("approvals.loadFailed"));
         retry.setText(getTranslation("time.retry"));
         loadErrorBox.setVisible(loadFailed);

@@ -793,3 +793,20 @@ vaadin-grid::part(holiday-cell) {
   min-width: 2.75rem;
   min-height: 2.75rem;
 }
+
+/* UC-010: scope switcher */
+.scope-switcher {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vaadin-gap-xs);
+}
+
+.scope-choice {
+  --vaadin-input-field-label-font-size: var(--aura-font-size-l);
+  font-size: var(--aura-font-size-l);
+}
+
+.scope-note {
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-l);
+}

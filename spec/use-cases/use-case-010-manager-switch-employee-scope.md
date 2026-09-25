@@ -4,8 +4,12 @@
 
 **Goal:** As a manager, I want to toggle between viewing only my direct reports and all employees in my department so that I can manage different scopes of responsibility.
 
-**Status:** Pending
+**Status:** Implemented
 **Date:** 2024-01-15
+
+> A use case cannot be marked as **Implemented** unless all criteria in the use case implementation workflow are fulfilled.
+
+> **Revision:** The scope switcher is a pair of radio buttons, "Direct reports only" and "All department employees", at the top of the Approvals (UC-007) and Employees (UC-009) pages. Each option shows how many employees it covers (the manager themselves is never counted), and the selected option is always visible. Changing it reloads the list in place, so nothing else on the page is lost (BR-05: an entered search stays). The choice is kept for the session (BR-04), so both pages agree; a new session starts with the direct reports (BR-01). Without direct reports the page says "You have no direct reports." while the department option stays usable (AF-1). Without a department on the account the department option is disabled with the message "Department not configured for your account. Contact your administrator.", and an earlier department choice falls back to the direct reports (AF-2); the database does not allow an employee without a department, so this only guards against an incomplete record. If the list of the other scope cannot be loaded, the message "Unable to load employees. Please try again." is shown and the previous scope and list stay (AF-3). For an administrator the department scope covers all employees. The scope filters what the lists offer; whether a manager may open or decide about a timesheet is still decided by `ReviewerAuthorization` alone (spec section 6: the department in any case), so a timesheet is reachable by address whichever scope is selected.
 
 ---
 
@@ -106,11 +110,11 @@ Manager navigates to the "Pending Approvals" or "Employees" view and sees a scop
 
 ## Tests
 
-- [ ] Main Flow covered (steps 1–6)
-- [ ] AF-1 (No Direct Reports) covered
-- [ ] AF-2 (No Department) covered
-- [ ] AF-3 (Database Error) covered
-- [ ] BR-01–BR-05 covered
+- [x] Main Flow covered (steps 1–6)
+- [x] AF-1 (No Direct Reports) covered
+- [x] AF-2 (No Department) covered
+- [x] AF-3 (Database Error) covered
+- [x] BR-01–BR-05 covered
 
 ---
 

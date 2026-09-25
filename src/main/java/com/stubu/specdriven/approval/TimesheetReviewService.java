@@ -104,6 +104,15 @@ public class TimesheetReviewService {
                 .toList();
     }
 
+    /** What the scope switcher offers this reviewer, and how many employees each scope covers. */
+    @Transactional(readOnly = true)
+    public ScopeOptions scopeOptions(long reviewerId) {
+        Employee reviewer = employees.findById(reviewerId).orElseThrow(ReviewNotAllowedException::new);
+        boolean departmentAvailable = reviewer.getRole() == Role.ADMIN || reviewer.getDepartmentId() != null;
+        return new ScopeOptions(inScope(reviewer, ReviewScope.DIRECT_REPORTS).size(),
+                departmentAvailable ? inScope(reviewer, ReviewScope.DEPARTMENT).size() : 0, departmentAvailable);
+    }
+
     /** The employees the reviewer may look at in the given scope, sorted by name. */
     @Transactional(readOnly = true)
     public List<EmployeeSummary> employees(long reviewerId, ReviewScope scope) {

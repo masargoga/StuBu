@@ -39,9 +39,12 @@ public class EmployeesView extends VerticalLayout implements HasDynamicTitle, Lo
     private final Long reviewerId;
     private transient List<EmployeeSummary> employees = List.of();
     private boolean loadFailed;
+    private ReviewScope scope = ReviewScopePreference.get();
+    private transient ScopeOptions options;
     private FlashMessage message;
 
     private final H2 heading = new H2();
+    private final ScopeSwitcher scopeSwitcher = new ScopeSwitcher();
     private final Div messageBox = new Div();
     private final Div loadErrorBox = new Div();
     private final Span loadError = new Span();
@@ -85,7 +88,8 @@ public class EmployeesView extends VerticalLayout implements HasDynamicTitle, Lo
         list.setTestId("employees");
         list.getElement().setAttribute("role", "table");
 
-        add(heading, messageBox, loadErrorBox, search, emptyHint, list);
+        add(heading, messageBox, loadErrorBox, scopeSwitcher, search, emptyHint, list);
+        scopeSwitcher.addScopeListener(this::switchScope);
         load();
     }
 
@@ -99,12 +103,30 @@ public class EmployeesView extends VerticalLayout implements HasDynamicTitle, Lo
             return;
         }
         try {
-            employees = service.employees(reviewerId, ReviewScope.DIRECT_REPORTS);
+            options = service.scopeOptions(reviewerId);
+            if (scope == ReviewScope.DEPARTMENT && !options.departmentAvailable()) {
+                scope = ReviewScope.DIRECT_REPORTS;
+            }
+            employees = service.employees(reviewerId, scope);
             loadFailed = false;
         } catch (DataAccessException e) {
             log.error("Could not load the employees of reviewer {}", reviewerId, e);
             loadFailed = true;
         }
+    }
+
+    /** The manager picked another scope: show it, or keep the previous one if it cannot be loaded (AF-3). */
+    private void switchScope(ReviewScope newScope) {
+        try {
+            employees = service.employees(reviewerId, newScope);
+            scope = newScope;
+            ReviewScopePreference.set(scope);
+            message = null;
+        } catch (DataAccessException e) {
+            log.error("Could not load the employees of reviewer {} for {}", reviewerId, newScope, e);
+            message = new FlashMessage("scope.loadFailed", true);
+        }
+        render();
     }
 
     @Override
@@ -135,6 +157,10 @@ public class EmployeesView extends VerticalLayout implements HasDynamicTitle, Lo
             messageBox.setVisible(true);
         }
 
+        scopeSwitcher.setVisible(!loadFailed && options != null);
+        if (options != null) {
+            scopeSwitcher.update(options, scope);
+        }
         loadError.setText(getTranslation("employees.loadFailed"));
         retry.setText(getTranslation("time.retry"));
         loadErrorBox.setVisible(loadFailed);
@@ -144,7 +170,8 @@ public class EmployeesView extends VerticalLayout implements HasDynamicTitle, Lo
         List<EmployeeSummary> shown = employees.stream().filter(employee -> query.isEmpty()
                 || employee.fullName().toLowerCase(Locale.ROOT).contains(query)
                 || employee.email().toLowerCase(Locale.ROOT).contains(query)).toList();
-        emptyHint.setText(getTranslation(employees.isEmpty() ? "employees.none" : "employees.noMatch"));
+        emptyHint.setText(getTranslation(!employees.isEmpty() ? "employees.noMatch"
+                : scope == ReviewScope.DEPARTMENT ? "employees.noneDepartment" : "employees.none"));
         emptyHint.setVisible(!loadFailed && shown.isEmpty());
         list.setVisible(!loadFailed && !shown.isEmpty());
         if (!list.isVisible()) {
