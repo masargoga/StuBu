@@ -1,6 +1,9 @@
 package com.stubu.specdriven.security;
 
+import com.stubu.specdriven.employee.EmployeeRepository;
 import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
+import java.time.Duration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,6 +11,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
 /**
  * Authentication is delegated to OIDC identity providers; there is no username/password login.
@@ -22,7 +26,9 @@ class SecurityConfiguration {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, EmployeeOidcUserService oidcUserService,
-            LoginSuccessHandler successHandler, LoginFailureHandler failureHandler) throws Exception {
+            LoginSuccessHandler successHandler, LoginFailureHandler failureHandler, EmployeeRepository employees,
+            @Value("${stubu.security.recheck-interval:PT5S}") Duration recheckInterval) throws Exception {
+        http.addFilterBefore(new CurrentEmployeeFilter(employees, recheckInterval), AuthorizationFilter.class);
         http.oauth2Login(oauth2 -> oauth2
                 .loginPage(LOGIN_PATH)
                 .userInfoEndpoint(userInfo -> userInfo.oidcUserService(oidcUserService))

@@ -19,4 +19,8 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     List<Long> findIdsByText(@org.springframework.data.repository.query.Param("pattern") String pattern);
 
     List<Employee> findByDepartmentId(Long departmentId);
+
+    /** Whether the employee is active and their current role; empty if the employee no longer exists. */
+    @org.springframework.data.jpa.repository.Query("select new com.stubu.specdriven.employee.EmployeeAccess(e.active, e.role) from Employee e where e.id = :id")
+    Optional<EmployeeAccess> findAccessById(@org.springframework.data.repository.query.Param("id") Long id);
 }

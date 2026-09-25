@@ -107,6 +107,24 @@ class UC001AuthenticateWithIamE2E extends E2ETest {
         assertThat(page.locator(".login-message")).containsText("has been deactivated");
     }
 
+    @Test
+    void anEmployeeDeactivatedWhileSignedInIsSentToTheLoginPage() {
+        open(DESKTOP);
+        signInAsAlice();
+
+        employee(ALICE, "Alice", "Employee", Role.EMPLOYEE, false);
+        try {
+            // The session is checked against the employee record every second in the tests.
+            page.waitForTimeout(1_500);
+            page.navigate(url("/"));
+
+            page.waitForURL(Pattern.compile(".*/login.*"));
+            assertThat(page.getByText("Sign in with Test IdP")).isVisible();
+        } finally {
+            employee(ALICE, "Alice", "Employee", Role.EMPLOYEE, true);
+        }
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("viewports")
     void theHomePageLaysOutNavigationHeaderAndContentAtEveryScreenSize(Viewport viewport) {
