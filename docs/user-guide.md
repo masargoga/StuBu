@@ -32,6 +32,14 @@ On "Today" and in "My Timesheet" every work period has **Edit** and **Delete**. 
 the audit log. Periods cannot overlap. You can correct a day only while the month is **not submitted** or after it was
 **rejected**; a submitted or approved month is locked.
 
+### Adding a forgotten entry
+
+In "My Timesheet" click **Add time entry** (or **Add entry** on the row of a day, which fills in the date), enter the
+date, the check-in and the check-out time (the check-out date is the same day unless you worked past midnight) and
+optionally a reason, then **Save**. **Save and add another** keeps the form open for the same day, for example for the
+afternoon after the morning. You can add entries for today and any earlier day, as long as the month is not submitted or
+approved (a rejected month can still be corrected), and the period must not overlap another one or lie in the future.
+
 ### Your month ("My Timesheet")
 
 Shows every day of the month with weekends and public holidays marked, the worked time, the break time and the total.

@@ -97,6 +97,7 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
     private final Button previous = new Button(VaadinIcon.ANGLE_LEFT.create());
     private final Button next = new Button(VaadinIcon.ANGLE_RIGHT.create());
     private final Select<YearMonth> monthSelect = new Select<>();
+    private final Button addEntry = new Button(VaadinIcon.PLUS.create());
     private final Div statusBox = new Div();
     private final Badge statusBadge = new Badge();
     private final Span statusText = new Span();
@@ -138,7 +139,11 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
                 show(event.getValue());
             }
         });
-        HorizontalLayout navigation = new HorizontalLayout(previous, monthSelect, next);
+        addEntry.setTestId("add-time-entry");
+        addEntry.addClassName("month-add");
+        addEntry.setEnabled(false);
+        addEntry.addClickListener(event -> openAdd(null));
+        HorizontalLayout navigation = new HorizontalLayout(previous, monthSelect, next, addEntry);
         navigation.addClassName("month-navigation");
         navigation.setAlignItems(FlexComponent.Alignment.CENTER);
 
@@ -173,6 +178,7 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
             render();
         });
         timeline.setEntryActions(this::edit, this::delete);
+        timeline.setAddEntry(this::openAdd);
         table.addThemeVariants(GridVariant.NO_BORDER);
         table.setAllRowsVisible(true);
         table.setTestId("month-table");
@@ -262,6 +268,11 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
                 .openEdit(this, entry, zone, this::corrected), this::refresh);
     }
 
+    /** Opens the form to add a work period afterwards; {@code date} is preset when started from a day row. */
+    private void openAdd(LocalDate date) {
+        new EntryCorrectionDialogs(entryService, employeeId).openAdd(this, date, zone, this::corrected);
+    }
+
     private void delete(Long entryId) {
         entryById(entryId).ifPresentOrElse(entry -> new EntryCorrectionDialogs(entryService, employeeId)
                 .openDelete(this, entry, zone, this::corrected), this::refresh);
@@ -270,6 +281,7 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
     private void corrected(EntryCorrectionDialogs.Outcome outcome) {
         message = switch (outcome) {
             case UPDATED -> new Message("time.edit.done", false);
+            case ADDED -> new Message("time.add.done", false);
             case DELETED -> new Message("time.delete.done", false);
             case LOCKED -> new Message("timesheet.locked", true);
             case GONE -> new Message("time.entry.gone", true);
@@ -359,6 +371,7 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
         next.getElement().setAttribute("aria-label", getTranslation("timesheet.next"));
         next.setEnabled(month.isBefore(latest));
         monthSelect.setAriaLabel(getTranslation("timesheet.month"));
+        addEntry.setText(getTranslation("timesheet.add"));
         updatingSelector = true;
         List<YearMonth> months = selectableMonths(latest);
         monthSelect.setItems(months);
@@ -371,6 +384,7 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
         loadErrorBox.update(loadFailed, getTranslation("timesheet.loadFailed"), getTranslation("time.retry"));
         boolean showSheet = !loadFailed && sheet != null;
         content.setVisible(showSheet);
+        addEntry.setEnabled(showSheet && sheet.editable());
         if (!showSheet) {
             return;
         }

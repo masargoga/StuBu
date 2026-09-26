@@ -1,6 +1,7 @@
 package com.stubu.specdriven.timetracking;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -14,10 +15,13 @@ import com.vaadin.flow.component.timepicker.TimePicker;
 import com.vaadin.flow.function.SerializableConsumer;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Locale;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -32,6 +36,8 @@ public class EntryCorrectionDialogs {
     /** How a dialog ended, so the caller can show a message and reload. */
     public enum Outcome {
         UPDATED, DELETED,
+        /** A work period was added afterwards (UC-015). */
+        ADDED,
         /** The timesheet was submitted in the meantime. */
         LOCKED,
         /** The entry does not exist any more. */
@@ -112,6 +118,116 @@ public class EntryCorrectionDialogs {
         dialog.getFooter().add(cancel, save);
         dialog.addClosedListener(event -> dialog.removeFromParent());
         dialog.open();
+    }
+
+    /**
+     * Opens the dialog to add a work period afterwards (UC-015): for today or an earlier day. "Save and add another"
+     * keeps the dialog open with the same date; every saved entry is reported to {@code done} as ADDED.
+     *
+     * @param presetDate the date to start with, or {@code null} to let the employee choose
+     */
+    public void openAdd(Component owner, LocalDate presetDate, ZoneId zone, SerializableConsumer<Outcome> done) {
+        LocalDate today = service.currentDate(zone);
+        Dialog dialog = new Dialog();
+        dialog.setWidth(DIALOG_WIDTH);
+        dialog.setHeaderTitle(owner.getTranslation("time.add.title"));
+
+        DatePicker date = datePicker(owner, owner.getTranslation("time.add.date"), presetDate, today, "add-date");
+        TimePicker inTime = timePicker(owner.getTranslation("time.edit.checkInTime"), null);
+        inTime.setTestId("add-check-in");
+        inTime.setRequiredIndicatorVisible(true);
+        TimePicker outTime = timePicker(owner.getTranslation("time.edit.checkOutTime"), null);
+        outTime.setTestId("add-check-out");
+        outTime.setRequiredIndicatorVisible(true);
+        // The check-out is on the same day unless the employee says otherwise: it may be after midnight.
+        DatePicker outDate = datePicker(owner, owner.getTranslation("time.edit.checkOutDate"), presetDate, today,
+                "add-check-out-date");
+        date.addValueChangeListener(event -> {
+            if (outDate.isEmpty() || Objects.equals(outDate.getValue(), event.getOldValue())) {
+                outDate.setValue(event.getValue());
+            }
+        });
+        TextField reason = reasonField(owner);
+        reason.setLabel(owner.getTranslation("time.add.reason"));
+        reason.setTestId("add-reason");
+        Div error = errorBox();
+        Div added = new Div();
+        added.addClassName("time-dialog-success");
+        added.getElement().setAttribute("role", "status");
+        added.setTestId("add-success");
+        added.setText(owner.getTranslation("time.add.done"));
+        added.setVisible(false);
+
+        FormLayout form = new FormLayout(date, inTime, outTime, outDate, reason);
+        form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("28rem", 2));
+        form.setColspan(date, 2);
+        form.setColspan(reason, 2);
+        VerticalLayout content = new VerticalLayout(added, form, error);
+        content.setPadding(false);
+        content.addClassName("time-dialog-content");
+        dialog.add(content);
+
+        SerializableConsumer<Boolean> save = another -> {
+            error.setVisible(false);
+            added.setVisible(false);
+            if (date.isEmpty() || inTime.isEmpty() || outTime.isEmpty()) {
+                showError(error, owner.getTranslation("time.add.error.REQUIRED"));
+                return;
+            }
+            LocalDate endDay = outDate.isEmpty() ? date.getValue() : outDate.getValue();
+            Instant checkIn = LocalDateTime.of(date.getValue(), inTime.getValue()).atZone(zone).toInstant();
+            Instant checkOut = LocalDateTime.of(endDay, outTime.getValue()).atZone(zone).toInstant();
+            try {
+                service.add(employeeId, checkIn, checkOut, reason.getValue(), zone);
+            } catch (InvalidWorkPeriodException invalid) {
+                showError(error, owner.getTranslation("time.edit.error." + invalid.getReason().name()));
+                return;
+            } catch (EntryLockedException locked) {
+                dialog.close();
+                done.accept(Outcome.LOCKED);
+                return;
+            } catch (DataAccessException e) {
+                log.error("Adding a work period failed for employee {}", employeeId, e);
+                showError(error, owner.getTranslation("time.edit.saveFailed"));
+                return;
+            }
+            if (another) {
+                inTime.clear();
+                outTime.clear();
+                inTime.setInvalid(false); // an empty field is not an error yet, the employee is about to fill it
+                outTime.setInvalid(false);
+                reason.clear();
+                outDate.setValue(date.getValue());
+                added.setVisible(true);
+            } else {
+                dialog.close();
+            }
+            done.accept(Outcome.ADDED);
+        };
+
+        Button cancel = new Button(owner.getTranslation("time.cancel"), event -> dialog.close());
+        cancel.addThemeVariants(ButtonVariant.TERTIARY);
+        cancel.setTestId("add-cancel");
+        cancel.addClassName("time-dialog-button");
+        Button saveAnother = new Button(owner.getTranslation("time.add.saveAnother"), event -> save.accept(true));
+        saveAnother.setTestId("add-save-another");
+        saveAnother.addClassName("time-dialog-button");
+        Button saveButton = new Button(owner.getTranslation("time.save"), event -> save.accept(false));
+        saveButton.addThemeVariants(ButtonVariant.PRIMARY);
+        saveButton.setTestId("add-save");
+        saveButton.addClassName("time-dialog-button");
+        dialog.getFooter().add(cancel, saveAnother, saveButton);
+        dialog.addClosedListener(event -> dialog.removeFromParent());
+        dialog.open();
+    }
+
+    private static DatePicker datePicker(Component owner, String label, LocalDate value, LocalDate max, String testId) {
+        DatePicker picker = new DatePicker(label, value);
+        picker.setLocale(owner.getUI().map(UI::getLocale).orElse(Locale.ENGLISH)); // month and weekday names and the date format follow the language of the page
+        picker.setMax(max);
+        picker.setRequiredIndicatorVisible(true);
+        picker.setTestId(testId);
+        return picker;
     }
 
     /** Opens the confirmation dialog to delete an entry. */

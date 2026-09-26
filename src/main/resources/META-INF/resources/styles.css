@@ -1602,3 +1602,28 @@ vaadin-dialog::part(overlay) {
 .manage-view .approval-cell {
   overflow-wrap: break-word;
 }
+
+/* UC-015: adding time entries afterwards */
+.month-navigation .month-add {
+  min-height: 2.75rem;
+  font-size: var(--aura-font-size-xl);
+  font-weight: var(--aura-font-weight-medium);
+}
+
+.day-add {
+  min-height: 2.25rem;
+  font-size: var(--aura-font-size-l);
+}
+
+/* The confirmation inside the add form after "Save and add another". */
+.time-dialog-success {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--vaadin-padding-s) var(--vaadin-padding-m);
+  border: 1px solid var(--stubu-green-line);
+  border-radius: var(--vaadin-radius-m);
+  background: var(--stubu-green-soft);
+  color: var(--aura-green-text);
+  font-size: var(--aura-font-size-l);
+  font-weight: var(--aura-font-weight-medium);
+}

@@ -29,6 +29,7 @@ public class MonthTimeline extends Div {
 
     private boolean readOnly;
     private SerializableConsumer<LocalDate> dayHandler;
+    private SerializableConsumer<LocalDate> addHandler;
     private SerializableConsumer<Long> editHandler = id -> {
     };
     private SerializableConsumer<Long> deleteHandler = id -> {
@@ -46,6 +47,11 @@ public class MonthTimeline extends Div {
     /** Adds a "day details" button to every day with work periods; called with the chosen day. */
     public void setDayDetails(SerializableConsumer<LocalDate> onDay) {
         this.dayHandler = onDay;
+    }
+
+    /** Adds an "Add entry" button to every day up to today when the timesheet allows changes (UC-015); called with the day. */
+    public void setAddEntry(SerializableConsumer<LocalDate> onAdd) {
+        this.addHandler = onAdd;
     }
 
     /** What happens when the user chooses Edit or Delete on a work period; called with the entry's id. */
@@ -116,6 +122,17 @@ public class MonthTimeline extends Div {
             details.setTooltipText(getTranslation("timesheet.day.detailsTooltip"));
             details.addClickListener(event -> dayHandler.accept(date));
             header.add(details);
+        }
+
+        if (addHandler != null && editable && !date.isAfter(today)) {
+            Button add = new Button(getTranslation("timesheet.day.add"), VaadinIcon.PLUS.create());
+            add.setTestId("add-day-entry");
+            add.addThemeVariants(ButtonVariant.TERTIARY);
+            add.addClassName("day-add");
+            add.getElement().setAttribute("aria-label", getTranslation("timesheet.day.add.label",
+                    date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale))));
+            add.addClickListener(event -> addHandler.accept(date));
+            header.add(add);
         }
 
         Div row = new Div(header);

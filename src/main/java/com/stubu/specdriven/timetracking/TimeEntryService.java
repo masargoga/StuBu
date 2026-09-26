@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -145,6 +146,49 @@ public class TimeEntryService {
             throw new InvalidWorkPeriodException(InvalidWorkPeriodException.Reason.OVERLAP);
         }
         return create(TimeEntry.completed(employeeId, checkInAt, now));
+    }
+
+    /**
+     * Adds a completed work period the employee forgot to record (UC-015): for today or an earlier day, in a month whose
+     * timesheet still allows changes. Both times are entered by the minute (seconds are set to zero), neither may lie in
+     * the future, the check-out must come after the check-in, and the period must not overlap another work period; an
+     * open check-in counts as running until now. The entry and its audit entry are stored in one transaction.
+     *
+     * @param reason why the entry is added; optional, kept in the audit log
+     * @param zone   the time zone that decides which month the check-in belongs to
+     * @throws InvalidWorkPeriodException if a time is missing, in the future, or the period overlaps another
+     * @throws EntryLockedException       if the timesheet of the month was already submitted or approved
+     */
+    public TimeEntry add(long employeeId, Instant checkInAt, Instant checkOutAt, String reason, ZoneId zone) {
+        Instant now = clock.instant();
+        if (checkInAt == null) {
+            throw new InvalidWorkPeriodException(InvalidWorkPeriodException.Reason.MISSING_START);
+        }
+        if (checkOutAt == null) {
+            throw new InvalidWorkPeriodException(InvalidWorkPeriodException.Reason.CHECK_OUT_REQUIRED);
+        }
+        Instant start = checkInAt.truncatedTo(ChronoUnit.MINUTES);
+        Instant end = checkOutAt.truncatedTo(ChronoUnit.MINUTES);
+        if (start.isAfter(now) || end.isAfter(now)) {
+            throw new InvalidWorkPeriodException(InvalidWorkPeriodException.Reason.IN_THE_FUTURE);
+        }
+        if (!end.isAfter(start)) {
+            throw new InvalidWorkPeriodException(InvalidWorkPeriodException.Reason.CHECK_OUT_BEFORE_CHECK_IN);
+        }
+        return Objects.requireNonNull(transaction.execute(status -> {
+            var timesheetStatus = timesheets.statusOf(employeeId, YearMonth.from(start.atZone(zone)));
+            if (!timesheetStatus.allowsCorrections()) {
+                throw new EntryLockedException(timesheetStatus);
+            }
+            if (entries.overlaps(employeeId, start, end, now)) {
+                throw new InvalidWorkPeriodException(InvalidWorkPeriodException.Reason.OVERLAP);
+            }
+            TimeEntry saved = entries.saveAndFlush(TimeEntry.completed(employeeId, start, end));
+            auditService.record(employeeId, ENTITY_TYPE, saved.getId(), AuditAction.CREATE, null,
+                    json(saved.getCheckInAt(), saved.getCheckOutAt()),
+                    blankToNull(reason) == null ? "Added afterwards" : blankToNull(reason));
+            return saved;
+        }));
     }
 
     /**
