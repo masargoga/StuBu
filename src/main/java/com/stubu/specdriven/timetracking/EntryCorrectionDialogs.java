@@ -48,13 +48,6 @@ public class EntryCorrectionDialogs {
     private static final String DIALOG_WIDTH = "min(34rem, 92vw)";
     private static final int REASON_MAX_LENGTH = 500;
 
-    /**
-     * The times offered in the list of a time field. The list only opens (by clicking the field or its clock icon)
-     * for steps of 15 minutes or more; a step of one minute would hide it. Any minute can still be typed: the
-     * field accepts values that do not line up with the step.
-     */
-    public static final Duration TIME_STEP = Duration.ofMinutes(15);
-
     private final TimeEntryService service;
     private final long employeeId;
 
@@ -80,12 +73,12 @@ public class EntryCorrectionDialogs {
         // The date of an entry cannot change, so the check-in date is read-only.
         DatePicker inDate = new DatePicker(owner.getTranslation("time.edit.checkInDate"), in.toLocalDate());
         inDate.setReadOnly(true);
-        TimePicker inTime = timePicker(owner.getTranslation("time.edit.checkInTime"), in.toLocalTime());
+        TimePicker inTime = timePicker(owner.getTranslation("time.edit.checkInTime"), in.toLocalTime(), TimeFields.MORNING);
         // The check-out has its own date so that a period may end after midnight.
         DatePicker outDate = new DatePicker(owner.getTranslation("time.edit.checkOutDate"),
                 out == null ? null : out.toLocalDate());
         TimePicker outTime = timePicker(owner.getTranslation("time.edit.checkOutTime"),
-                out == null ? null : out.toLocalTime());
+                out == null ? null : out.toLocalTime(), TimeFields.AFTERNOON);
         TextField reason = reasonField(owner);
         Div error = errorBox();
 
@@ -140,10 +133,10 @@ public class EntryCorrectionDialogs {
         dialog.setHeaderTitle(owner.getTranslation("time.add.title"));
 
         DatePicker date = datePicker(owner, owner.getTranslation("time.add.date"), presetDate, today, "add-date");
-        TimePicker inTime = timePicker(owner.getTranslation("time.edit.checkInTime"), null);
+        TimePicker inTime = timePicker(owner.getTranslation("time.edit.checkInTime"), null, TimeFields.MORNING);
         inTime.setTestId("add-check-in");
         inTime.setRequiredIndicatorVisible(true);
-        TimePicker outTime = timePicker(owner.getTranslation("time.edit.checkOutTime"), null);
+        TimePicker outTime = timePicker(owner.getTranslation("time.edit.checkOutTime"), null, TimeFields.AFTERNOON);
         outTime.setTestId("add-check-out");
         outTime.setRequiredIndicatorVisible(true);
         // The check-out is on the same day unless the employee says otherwise: it may be after midnight.
@@ -308,9 +301,9 @@ public class EntryCorrectionDialogs {
         done.accept(outcome);
     }
 
-    private static TimePicker timePicker(String label, LocalTime value) {
+    private static TimePicker timePicker(String label, LocalTime value, LocalTime opensAt) {
         TimePicker picker = new TimePicker(label);
-        picker.setStep(TIME_STEP);
+        TimeFields.configure(picker, opensAt);
         picker.setValue(value == null ? null : value.truncatedTo(ChronoUnit.MINUTES));
         return picker;
     }

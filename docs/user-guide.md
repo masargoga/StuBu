@@ -37,7 +37,7 @@ the audit log. Periods cannot overlap. You can correct a day only while the mont
 In "My Timesheet" click **Add time entry** (or **Add entry** on the row of a day, which fills in the date), enter the
 date, the check-in and the check-out time (the check-out date is the same day unless you worked past midnight) and
 optionally a reason, then **Save**. Click a time field or its clock icon to choose from a list of times (every 15
-minutes), or type any time to the minute, for example 8:03 AM. **Save and add another** keeps the form open for the same day, for example for the
+minutes; the list opens at the morning for the check-in and the afternoon for the check-out), or type any time to the minute, for example 8:03 AM. **Save and add another** keeps the form open for the same day, for example for the
 afternoon after the morning. You can add entries for today and any earlier day, as long as the month is not submitted or
 approved (a rejected month can still be corrected), and the period must not overlap another one or lie in the future.
 
