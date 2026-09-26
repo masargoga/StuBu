@@ -268,6 +268,7 @@ public class TimeTrackingPanel extends VerticalLayout implements LocaleChangeObs
         startDate.setRequired(true);
         TimePicker startTime = new TimePicker(getTranslation("time.missing.time"));
         startTime.setRequired(true);
+        startTime.setStep(EntryCorrectionDialogs.TIME_STEP); // a list of times to choose from; any minute can be typed
         DialogError error = new DialogError();
 
         HorizontalLayout fields = new HorizontalLayout(startDate, startTime);

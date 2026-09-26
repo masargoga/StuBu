@@ -9,7 +9,7 @@
 
 > A use case cannot be marked as **Implemented** unless all criteria in the use-case implementation workflow are fulfilled.
 
-> **Revision:** The form is one dialog with the fields Date, Check-in time, Check-out time, Check-out date (follows the date until changed) and "Reason (optional)". The general "Add time entry" button sits next to the month selector; the per-day "Add entry" buttons are part of the timeline rows for every day up to and including today. "Save and add another" keeps the dialog open and shows "Time entry added." inside it; the page behind it is reloaded after every saved entry. In a locked month the general button is disabled, there are no per-day buttons, and the status card says "The entries of this timesheet cannot be edited because it has been submitted." Without a reason the audit entry says "Added afterwards".
+> **Revision:** The form is one dialog with the fields Date, Check-in time, Check-out time, Check-out date (follows the date until changed) and "Reason (optional)". The general "Add time entry" button sits next to the month selector; the per-day "Add entry" buttons are part of the timeline rows for every day up to and including today. "Save and add another" keeps the dialog open and shows "Time entry added." inside it; the page behind it is reloaded after every saved entry. In a locked month the general button is disabled, there are no per-day buttons, and the status card says "The entries of this timesheet cannot be edited because it has been submitted." Without a reason the audit entry says "Added afterwards". The two time fields open a list of times in 15-minute steps when the field or its clock icon is clicked, so a time can be chosen with the mouse or by touch; any minute can also be typed (for example 8:03 AM), and the typed minute is what is stored (BR-10).
 
 ---
 
@@ -38,8 +38,8 @@ On the timesheet page ("My Timesheet") the employee clicks **"Add time entry"** 
 2. Employee clicks "Add time entry", or "Add entry" on a day row.
 3. System shows the add form with:
    - Date (a day up to and including today; preset when started from a day row)
-   - Check-in time
-   - Check-out time
+   - Check-in time (chosen from a list of times in 15-minute steps that opens when the field or its clock icon is clicked, or typed to the minute)
+   - Check-out time (the same)
    - Check-out date (the same day by default; the next day for work past midnight)
    - Reason (optional text, kept in the audit log)
    - Buttons "Save", "Save and add another" and "Cancel"
@@ -145,6 +145,7 @@ On the timesheet page ("My Timesheet") the employee clicks **"Add time entry"** 
 | BR-07 | There is no maximum number of hours per day or per entry and no automatic blocking because of legal working-time limits (spec.md section 31) |
 | BR-08 | Adding entries does not change the status of a timesheet; an entry added to a rejected timesheet stays part of it and is submitted with it (UC-008) |
 | BR-09 | The employee's time zone (the browser's) decides which day a period belongs to; the times are stored as absolute instants (spec.md section 8) |
+| BR-10 | The time fields offer a list of times in 15-minute steps, opened by clicking the field or its clock icon (a step below 15 minutes would hide the list); the employee can also type any time to the minute, and the time typed is the time stored, whether or not it is a multiple of 15 minutes |
 
 ---
 
@@ -160,7 +161,7 @@ On the timesheet page ("My Timesheet") the employee clicks **"Add time entry"** 
 - [x] AF-5 (Timesheet locked, before and after opening the form) covered
 - [x] AF-6 (Database error) covered
 - [x] AF-7 (Cancel) covered
-- [x] BR-01–BR-09 covered
+- [x] BR-01–BR-10 covered
 - [x] Layout checked at desktop, tablet and phone size
 
 ---
@@ -168,7 +169,7 @@ On the timesheet page ("My Timesheet") the employee clicks **"Add time entry"** 
 ## UI Surface
 
 - **Timesheet page:** An "Add time entry" button next to the month selector, available in the timeline view and in the table view. In the timeline view every day row up to and including today also has an "Add entry" button. In a locked month the buttons are disabled and the explanation is shown.
-- **Add form:** A modal with the date, check-in time, check-out time, check-out date (same day by default) and an optional reason. Buttons "Save" (primary), "Save and add another" and "Cancel". Errors are shown at the fields they belong to. Large touch targets; usable at phone, tablet and desktop size.
+- **Add form:** A modal with the date, check-in time, check-out time, check-out date (same day by default) and an optional reason. Clicking a time field or its clock icon opens a list of times (every 15 minutes) to choose from; times can also be typed. Buttons "Save" (primary), "Save and add another" and "Cancel". Errors are shown at the fields they belong to. Large touch targets; usable at phone, tablet and desktop size.
 - **Feedback:** A confirmation message "Time entry added." after saving, and clear error messages as described in the alternative flows.
 
 | Page | Access |

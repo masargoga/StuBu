@@ -10,6 +10,7 @@ import com.stubu.specdriven.timesheet.TimesheetService;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.YearMonth;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -54,6 +55,11 @@ class UC015AddHistoricalTimeEntriesE2E extends E2ETest {
 
     private Locator dayButton(String date) {
         return page.locator("[data-date='" + date + "'] [data-testid=add-day-entry]");
+    }
+
+    /** An entry of the list of times that a time field opens. */
+    private Locator timeItem(String timeRegex) {
+        return page.locator("vaadin-time-picker-item:visible").filter(new Locator.FilterOptions().setHasText(Pattern.compile(timeRegex))).first();
     }
 
     /** Types a time into a time picker the way a user does. */
@@ -119,6 +125,33 @@ class UC015AddHistoricalTimeEntriesE2E extends E2ETest {
         assertThat(page.getByTestId("month-total")).containsText("Total hours: 8h 0m");
         assertNoHorizontalOverflow();
         screenshot("month-added-" + viewport.name());
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("viewports")
+    void theClockIconOpensAListOfTimesAndAnyMinuteCanStillBeTyped(Viewport viewport) {
+        openTimesheet(viewport);
+        dayButton("2026-09-10").click();
+
+        // The clock icon opens the list. It shows the times from midnight on in steps of 15 minutes (the list is
+        // scrolled, so only the first entries are in the page); the times contain a narrow no-break space.
+        page.locator("[data-testid=add-check-in] [part~=toggle-button]").click();
+        Locator one = timeItem("1:00\\sAM");
+        one.waitFor();
+        screenshot("time-list-" + viewport.name());
+        one.click();
+        assertThat(page.locator("[data-testid=add-check-in] input")).hasValue(Pattern.compile("1:00\\sAM"));
+
+        page.locator("[data-testid=add-check-out] [part~=toggle-button]").click();
+        timeItem("3:00\\sAM").click();
+        assertThat(page.locator("[data-testid=add-check-out] input")).hasValue(Pattern.compile("3:00\\sAM"));
+
+        fillTime("add-check-in", "1:03 AM"); // typing still works, and the minute need not be a multiple of 15
+        page.getByTestId("add-save").click();
+
+        assertThat(page.getByTestId("add-save")).hasCount(0);
+        assertThat(page.locator("[data-date='2026-09-10']")).containsText("1:03 AM");
+        assertThat(page.locator("[data-date='2026-09-10']")).containsText("3:00 AM");
     }
 
     @ParameterizedTest(name = "{0}")

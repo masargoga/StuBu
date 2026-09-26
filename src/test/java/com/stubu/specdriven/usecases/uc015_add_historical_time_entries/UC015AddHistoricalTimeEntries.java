@@ -431,6 +431,23 @@ class UC015AddHistoricalTimeEntries extends SpringBrowserlessTest {
         assertEquals(1, timeEntries.count());
     }
 
+    @Test
+    void br10_theTimeFieldsOfferAListInStepsOf15MinutesAndStillTakeAnyMinute() {
+        MonthlyTimesheetView view = openMonth("2026-09");
+        test(dayButton(view, "2026-09-10")).click();
+
+        // A step below 15 minutes would hide the list that opens with the clock icon.
+        assertEquals(java.time.Duration.ofMinutes(15), timePicker("add-check-in").getStep());
+        assertEquals(java.time.Duration.ofMinutes(15), timePicker("add-check-out").getStep());
+        timePicker("add-check-in").setValue(LocalTime.of(8, 3));
+        timePicker("add-check-out").setValue(LocalTime.of(12, 7));
+        test(button("add-save")).click();
+
+        TimeEntry stored = only();
+        assertEquals(Instant.parse("2026-09-10T08:03:00Z"), stored.getCheckInAt(), "The typed minute is stored");
+        assertEquals(Instant.parse("2026-09-10T12:07:00Z"), stored.getCheckOutAt());
+    }
+
     // --- helpers --------------------------------------------------------------------------------
 
     private MonthlyTimesheetView openMonth(String month) {

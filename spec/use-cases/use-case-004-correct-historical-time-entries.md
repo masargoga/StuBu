@@ -11,6 +11,8 @@
 
 > **Revision:** Times are absolute instants (see `spec.md` section 8 and the data model), and a period may cross midnight. The edit form therefore has a read-only check-in date (the date of an entry cannot change) and a date plus time for the check-out. Deleting removes the entry permanently; the audit log keeps its times, so no soft-delete flag is needed. The delete dialog has an optional reason field, so the audit log can record it. The timesheet status that AF-3 depends on comes from a minimal timesheet record (employee, month, status); a month without a record counts as a draft. UC-005 and UC-006 extend the timesheet.
 
+> **Revision (time fields):** The check-in and check-out time fields of the edit form open a list of times in 15-minute steps when the field or its clock icon is clicked; any minute can still be typed, and a time that was not touched keeps its recorded second.
+
 ---
 
 ## Actors

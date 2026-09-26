@@ -48,6 +48,13 @@ public class EntryCorrectionDialogs {
     private static final String DIALOG_WIDTH = "min(34rem, 92vw)";
     private static final int REASON_MAX_LENGTH = 500;
 
+    /**
+     * The times offered in the list of a time field. The list only opens (by clicking the field or its clock icon)
+     * for steps of 15 minutes or more; a step of one minute would hide it. Any minute can still be typed: the
+     * field accepts values that do not line up with the step.
+     */
+    public static final Duration TIME_STEP = Duration.ofMinutes(15);
+
     private final TimeEntryService service;
     private final long employeeId;
 
@@ -303,7 +310,7 @@ public class EntryCorrectionDialogs {
 
     private static TimePicker timePicker(String label, LocalTime value) {
         TimePicker picker = new TimePicker(label);
-        picker.setStep(Duration.ofMinutes(1));
+        picker.setStep(TIME_STEP);
         picker.setValue(value == null ? null : value.truncatedTo(ChronoUnit.MINUTES));
         return picker;
     }
