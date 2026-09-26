@@ -52,8 +52,9 @@ public class EmployeeSearch {
 
     private List<EmployeeRow> rows(Conditions conditions, String order, int first, int max) {
         TypedQuery<Object[]> query = entityManager.createQuery("select e, d.name, m.firstName, m.lastName, " + LAST_LOGIN
-                + " from Employee e left join Department d on d.id = e.departmentId left join Employee m "
-                + "on m.id = e.managerId" + conditions.where() + order, Object[].class);
+                + ", r.name from Employee e left join Department d on d.id = e.departmentId left join Employee m "
+                + "on m.id = e.managerId left join Region r on r.id = e.regionId" + conditions.where() + order,
+                Object[].class);
         conditions.bind(query);
         query.setFirstResult(first);
         query.setMaxResults(max);
@@ -64,9 +65,9 @@ public class EmployeeSearch {
         var employee = (com.stubu.specdriven.employee.Employee) values[0];
         String manager = employee.getManagerId() == null || values[2] == null ? null : values[2] + " " + values[3];
         return new EmployeeRow(employee.getId(), employee.getEmail(), employee.getFirstName(), employee.getLastName(),
-                employee.getRole(), employee.getDepartmentId(), (String) values[1], employee.getManagerId(), manager,
-                employee.isActive(), employee.getCreatedAt(), (Instant) values[4],
-                employee.getVersion() == null ? 0 : employee.getVersion());
+                employee.getRole(), employee.getDepartmentId(), (String) values[1], employee.getRegionId(),
+                (String) values[5], employee.getManagerId(), manager, employee.isActive(), employee.getCreatedAt(),
+                (Instant) values[4], employee.getVersion() == null ? 0 : employee.getVersion());
     }
 
     // --- conditions --------------------------------------------------------------------------------

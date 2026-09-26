@@ -1592,11 +1592,13 @@ vaadin-dialog::part(overlay) {
   max-width: none;
 }
 
-.manage-head,
-.manage-view .approval-head,
-.manage-view .approval-row {
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 2.4fr) minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 1.3fr) minmax(0, 0.8fr)
-      minmax(0, 1.4fr) 16rem;
+@media (min-width: 1501px) {
+  .manage-head,
+  .manage-view .approval-head,
+  .manage-view .approval-row {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 2.4fr) minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 1.3fr)
+        minmax(0, 0.8fr) minmax(0, 1.4fr) 16rem;
+  }
 }
 
 .manage-view .approval-cell {
@@ -1698,5 +1700,88 @@ vaadin-dialog::part(overlay) {
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+}
+
+/* UC-017: regions and their public holidays */
+.holiday-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--vaadin-gap-m);
+}
+
+.holiday-view .holiday-toolbar vaadin-select:first-child {
+  min-width: 14rem;
+  max-width: 22rem;
+}
+
+.holiday-view .holiday-toolbar vaadin-button {
+  min-height: 2.5rem;
+  font-size: var(--aura-font-size-l);
+}
+
+.holiday-region-note {
+  display: block;
+  margin: 0 0 var(--vaadin-gap-s);
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-l);
+}
+
+.region-add {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--vaadin-gap-m);
+}
+
+.region-add vaadin-text-field {
+  flex: 1 1 auto;
+  min-width: 0;
+  --vaadin-input-field-value-font-size: var(--aura-font-size-l);
+  --vaadin-input-field-label-font-size: var(--aura-font-size-l);
+}
+
+.region-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--aura-neutral-border, color-mix(in srgb, var(--aura-neutral) 20%, transparent));
+}
+
+.region-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vaadin-gap-s);
+  padding: var(--vaadin-padding-s) 0;
+  border-bottom: 1px solid var(--aura-neutral-border, color-mix(in srgb, var(--aura-neutral) 20%, transparent));
+}
+
+.region-row > div:first-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.region-row .manage-actions {
+  flex: none;
+  flex-wrap: nowrap;
+}
+
+.region-name {
+  font-size: var(--aura-font-size-l);
+  font-weight: var(--aura-font-weight-medium);
+  overflow-wrap: anywhere;
+}
+
+.region-counts {
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-m);
+}
+
+@media (max-width: 640px) {
+  .region-add {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

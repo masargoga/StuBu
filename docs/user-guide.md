@@ -51,7 +51,7 @@ approved (a rejected month can still be corrected), and the period must not over
 
 ### Your month ("My Timesheet")
 
-Shows every day of the month with weekends and public holidays marked, the worked time, the break time and the total.
+Shows every day of the month with weekends and public holidays of your region marked (the note above the month names the region), the worked time, the break time and the total. A manager looking at an employee's timesheet sees the holidays of the employee's region.
 Switch between **Timeline** and **Table**. The badge shows the state: *Not submitted*, *Submitted*, *Approved*,
 *Rejected* (with the reason and who decided).
 
@@ -83,7 +83,7 @@ resubmission.
   read-only. Nothing is ever deleted.
   If two administrators edit the same person at once, the second save is refused with a message; look at the current
   data and try again.
-* **Public holidays**: add, edit and delete holidays; they mark days in the month views and never change worked time.
+* **Public holidays**: choose a region, then add, edit and delete its holidays; they mark days in the month views of the employees of that region and never change worked time. **Manage regions** adds, renames and deletes regions (a region that employees or holidays still use cannot be deleted). Set the region of an employee in the employee form.
 * **Audit log**: newest first, 25 per page. Filter by date range, user, kind of record and action; open an entry to see
   old and new values; **Export as CSV** exports what the filter shows.
 * Administrators can look at every employee's timesheet but **do not approve or reject** timesheets; that is the

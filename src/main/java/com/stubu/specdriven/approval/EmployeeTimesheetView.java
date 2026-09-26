@@ -6,6 +6,7 @@ import com.stubu.specdriven.base.LoadErrorBox;
 import com.stubu.specdriven.base.MainLayout;
 import com.stubu.specdriven.monthlytimesheet.MonthTimeline;
 import com.stubu.specdriven.monthlytimesheet.MonthlyTimesheet;
+import com.stubu.specdriven.monthlytimesheet.RegionNote;
 import com.stubu.specdriven.security.EmployeePrincipal;
 import com.stubu.specdriven.timesheet.TimesheetStatus;
 import com.stubu.specdriven.timetracking.DurationFormat;
@@ -89,6 +90,7 @@ public class EmployeeTimesheetView extends VerticalLayout implements HasUrlParam
     private final Span breaks = new Span();
     private final Div emptyHint = new Div();
     private final MonthTimeline timeline = new MonthTimeline();
+    private final RegionNote regionNote = new RegionNote();
     private final TimesheetHistory history = new TimesheetHistory();
 
     public EmployeeTimesheetView(AuthenticationContext authenticationContext, TimesheetReviewService service,
@@ -168,7 +170,7 @@ public class EmployeeTimesheetView extends VerticalLayout implements HasUrlParam
 
         content.setPadding(false);
         content.setSpacing(true);
-        content.add(statusBox, totals, emptyHint, timeline, history);
+        content.add(statusBox, totals, emptyHint, regionNote, timeline, history);
         add(back, title, navigation, loadErrorBox, noTimesheet, content);
     }
 
@@ -303,6 +305,7 @@ public class EmployeeTimesheetView extends VerticalLayout implements HasUrlParam
         boolean empty = sheet.days().stream().allMatch(line -> line.day().entries().isEmpty());
         emptyHint.setText(getTranslation("timesheet.empty", ApprovalsView.month(month, locale)));
         emptyHint.setVisible(empty);
+        regionNote.show(sheet);
         timeline.show(sheet, zone, entryService.now(), entryService.currentDate(zone));
         history.show(details.history(), zone);
     }

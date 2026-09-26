@@ -35,9 +35,9 @@ class UC012AdminConfigurePublicHolidaysE2E extends E2ETest {
     void setUpHolidays() {
         employee(CAROL, "Carol", "Admin", Role.ADMIN, true);
         jdbc.update("delete from public_holiday");
-        jdbc.update("insert into public_holiday (holiday_date, name, created_at) values ('2026-12-25', 'Christmas', "
+        jdbc.update("insert into public_holiday (region_id, holiday_date, name, created_at) values (1, '2026-12-25', 'Christmas', "
                 + "current_timestamp)");
-        jdbc.update("insert into public_holiday (holiday_date, name, created_at) values ('2026-01-01', "
+        jdbc.update("insert into public_holiday (region_id, holiday_date, name, created_at) values (1, '2026-01-01', "
                 + "'New Year''s Day', current_timestamp)");
         clock.set(NOW);
     }
@@ -128,7 +128,7 @@ class UC012AdminConfigurePublicHolidaysE2E extends E2ETest {
 
     @Test
     void aConfiguredHolidayIsMarkedInTheMonthView() {
-        jdbc.update("insert into public_holiday (holiday_date, name, created_at) values ('2026-09-15', "
+        jdbc.update("insert into public_holiday (region_id, holiday_date, name, created_at) values (1, '2026-09-15', "
                 + "'Founders Day', current_timestamp)");
         open(DESKTOP);
         signIn(CAROL);

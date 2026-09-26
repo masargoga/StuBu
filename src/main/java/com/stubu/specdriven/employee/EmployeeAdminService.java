@@ -5,6 +5,8 @@ import com.stubu.specdriven.audit.AuditJson;
 import com.stubu.specdriven.audit.AuditLogRepository;
 import com.stubu.specdriven.audit.AuditService;
 import com.stubu.specdriven.employee.EmployeeValidationException.Problem;
+import com.stubu.specdriven.region.Region;
+import com.stubu.specdriven.region.RegionRepository;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -37,16 +39,18 @@ public class EmployeeAdminService {
 
     private final EmployeeRepository employees;
     private final DepartmentRepository departments;
+    private final RegionRepository regions;
     private final AuditService auditService;
     private final AuditLogRepository auditLog;
     private final AdminAccess adminAccess;
     private final TransactionTemplate transaction;
 
     public EmployeeAdminService(EmployeeRepository employees, DepartmentRepository departments,
-            AuditService auditService, AuditLogRepository auditLog, AdminAccess adminAccess,
+            RegionRepository regions, AuditService auditService, AuditLogRepository auditLog, AdminAccess adminAccess,
             PlatformTransactionManager transactionManager) {
         this.employees = employees;
         this.departments = departments;
+        this.regions = regions;
         this.auditService = auditService;
         this.auditLog = auditLog;
         this.adminAccess = adminAccess;
@@ -59,6 +63,14 @@ public class EmployeeAdminService {
         requireAdmin(adminId);
         return departments.findAll().stream().sorted(Comparator.comparing(Department::getName,
                 String.CASE_INSENSITIVE_ORDER)).map(department -> new Choice(department.getId(), department.getName()))
+                .toList();
+    }
+
+    /** The regions to choose from (UC-017). */
+    @Transactional(readOnly = true)
+    public List<Choice> regions(long adminId) {
+        requireAdmin(adminId);
+        return regions.findAllByOrderByNameAsc().stream().map(region -> new Choice(region.getId(), region.getName()))
                 .toList();
     }
 
@@ -96,6 +108,7 @@ public class EmployeeAdminService {
                 Employee employee = new Employee(email, input.firstName().strip(), input.lastName().strip(),
                         input.role(), input.departmentId());
                 employee.setManagerId(input.managerId());
+                employee.setRegionId(input.regionId());
                 Employee stored = employees.saveAndFlush(employee);
                 auditService.record(adminId, ENTITY_TYPE, stored.getId(), AuditAction.CREATE, null, values(stored), null);
                 return stored;
@@ -137,6 +150,7 @@ public class EmployeeAdminService {
             employee.setRole(input.role());
             employee.setManagerId(input.managerId());
             employee.setDepartmentId(input.departmentId());
+            employee.setRegionId(input.regionId());
             String after = values(employee);
             if (!before.equals(after)) {
                 Employee stored = employees.saveAndFlush(employee);
@@ -220,6 +234,11 @@ public class EmployeeAdminService {
         } else if (!departments.existsById(input.departmentId())) {
             problems.add(Problem.DEPARTMENT_UNKNOWN);
         }
+        if (input.regionId() == null) {
+            problems.add(Problem.REGION_REQUIRED);
+        } else if (!regions.existsById(input.regionId())) {
+            problems.add(Problem.REGION_UNKNOWN);
+        }
         if (input.managerId() != null) {
             if (existing != null && input.managerId().equals(existing.getId())) {
                 problems.add(Problem.MANAGER_IS_SELF);
@@ -262,20 +281,25 @@ public class EmployeeAdminService {
         if (employee.getManagerId() != null) {
             employees.findById(employee.getManagerId()).ifPresent(manager -> byId.put(manager.getId(), manager));
         }
-        return row(employee, departmentNames, byId, auditLog.findLastLogin(employee.getId()));
+        return row(employee, departmentNames, regionNameOf(employee), byId, auditLog.findLastLogin(employee.getId()));
     }
 
-    private static EmployeeRow row(Employee employee, Map<Long, String> departmentNames, Map<Long, Employee> byId,
-            Instant lastLoginAt) {
+    private String regionNameOf(Employee employee) {
+        return regions.findById(employee.getRegionId()).map(Region::getName).orElse(null);
+    }
+
+    private static EmployeeRow row(Employee employee, Map<Long, String> departmentNames, String regionName,
+            Map<Long, Employee> byId, Instant lastLoginAt) {
         Employee manager = employee.getManagerId() == null ? null : byId.get(employee.getManagerId());
         return new EmployeeRow(employee.getId(), employee.getEmail(), employee.getFirstName(), employee.getLastName(),
                 employee.getRole(), employee.getDepartmentId(), departmentNames.get(employee.getDepartmentId()),
-                employee.getManagerId(), manager == null ? null : manager.getFullName(), employee.isActive(), employee.getCreatedAt(),
+                employee.getRegionId(), regionName, employee.getManagerId(),
+                manager == null ? null : manager.getFullName(), employee.isActive(), employee.getCreatedAt(),
                 lastLoginAt, employee.getVersion() == null ? 0 : employee.getVersion());
     }
 
     /** The audit values of an employee. */
-    private static String values(Employee employee) {
+    private String values(Employee employee) {
         Map<String, Object> values = new LinkedHashMap<>();
         values.put("email", employee.getEmail());
         values.put("firstName", employee.getFirstName());
@@ -283,6 +307,8 @@ public class EmployeeAdminService {
         values.put("role", employee.getRole().name());
         values.put("managerId", employee.getManagerId());
         values.put("departmentId", employee.getDepartmentId());
+        values.put("regionId", employee.getRegionId());
+        values.put("region", regionNameOf(employee));
         values.put("active", employee.isActive());
         return AuditJson.object(values);
     }

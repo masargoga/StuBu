@@ -1,5 +1,6 @@
 package com.stubu.specdriven.usecases.uc012_admin_configure_public_holidays;
 
+import com.stubu.specdriven.region.Region;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -105,7 +106,7 @@ class UC012AdminConfigurePublicHolidays extends SpringBrowserlessTest {
     @Test
     void mainFlow_add_createsTheHolidayAndAuditsIt() {
         PublicHolidayView view = openList();
-        assertTrue(text(view).contains("No public holidays are configured for 2026."), text(view));
+        assertTrue(text(view).contains("No public holidays are configured for Default in 2026."), text(view));
         test(button("add-holiday")).click();
         Dialog dialog = find(Dialog.class).single();
         int audits = auditLog.findAllByOrderByIdAsc().size();
@@ -114,7 +115,7 @@ class UC012AdminConfigurePublicHolidays extends SpringBrowserlessTest {
         test(button(dialog, "holiday-save")).click();
 
         assertFalse(dialog.isOpened());
-        PublicHoliday saved = holidays.findByDate(LocalDate.of(2026, 12, 25)).orElseThrow();
+        PublicHoliday saved = holidays.findByRegionIdAndDate(Region.DEFAULT_ID, LocalDate.of(2026, 12, 25)).orElseThrow();
         assertEquals("Christmas", saved.getName());
         List<AuditLogEntry> audit = auditLog.findAllByOrderByIdAsc();
         assertEquals(audits + 1, audit.size());
@@ -247,7 +248,7 @@ class UC012AdminConfigurePublicHolidays extends SpringBrowserlessTest {
         assertEquals("Please enter a valid date.", datePicker(dialog).getErrorMessage());
         assertTrue(datePicker(dialog).isInvalid());
         for (LocalDate date : java.util.Arrays.asList(null, LocalDate.of(1999, 12, 31), LocalDate.of(2101, 1, 1))) {
-            assertTrue(assertThrows(HolidayValidationException.class, () -> service.add(carol, date, "Christmas"))
+            assertTrue(assertThrows(HolidayValidationException.class, () -> service.add(carol, Region.DEFAULT_ID, date, "Christmas"))
                     .has(Problem.DATE_INVALID), String.valueOf(date));
         }
         assertEquals(0, holidays.count());
@@ -266,7 +267,7 @@ class UC012AdminConfigurePublicHolidays extends SpringBrowserlessTest {
         assertTrue(dialog.isOpened());
         assertEquals("Please enter a holiday name.", textField(dialog, "holiday-name").getErrorMessage());
         assertEquals(0, holidays.count());
-        assertTrue(assertThrows(HolidayValidationException.class, () -> service.add(carol, LocalDate.of(2026, 12, 25),
+        assertTrue(assertThrows(HolidayValidationException.class, () -> service.add(carol, Region.DEFAULT_ID, LocalDate.of(2026, 12, 25),
                 null)).has(Problem.NAME_REQUIRED));
     }
 
@@ -357,12 +358,12 @@ class UC012AdminConfigurePublicHolidays extends SpringBrowserlessTest {
     void br01_onlyActiveAdministratorsMayManageHolidays() {
         long bob = person("bob.manager@example.com", "Bob", "Manager", Role.MANAGER, departments.findAll().getFirst());
         for (long notAdmin : List.of(bob, alice)) {
-            assertThrows(AdminOnlyException.class, () -> service.add(notAdmin, LocalDate.of(2026, 12, 25), "Christmas"));
+            assertThrows(AdminOnlyException.class, () -> service.add(notAdmin, Region.DEFAULT_ID, LocalDate.of(2026, 12, 25), "Christmas"));
             assertThrows(AdminOnlyException.class, () -> service.list(notAdmin));
         }
         jdbc.update("update employee set is_active = false where id = ?", carol);
         try {
-            assertThrows(AdminOnlyException.class, () -> service.add(carol, LocalDate.of(2026, 12, 25), "Christmas"));
+            assertThrows(AdminOnlyException.class, () -> service.add(carol, Region.DEFAULT_ID, LocalDate.of(2026, 12, 25), "Christmas"));
         } finally {
             jdbc.update("update employee set is_active = true where id = ?", carol);
         }
@@ -371,8 +372,8 @@ class UC012AdminConfigurePublicHolidays extends SpringBrowserlessTest {
 
     @Test
     void br02_eachDateHasAtMostOneHolidayEvenWhenTwoAdministratorsAddItAtOnce() {
-        service.add(carol, LocalDate.of(2026, 12, 25), "Christmas");
-        assertTrue(assertThrows(HolidayValidationException.class, () -> service.add(carol, LocalDate.of(2026, 12, 25),
+        service.add(carol, Region.DEFAULT_ID, LocalDate.of(2026, 12, 25), "Christmas");
+        assertTrue(assertThrows(HolidayValidationException.class, () -> service.add(carol, Region.DEFAULT_ID, LocalDate.of(2026, 12, 25),
                 "Christmas again")).has(Problem.DATE_TAKEN));
         // The database enforces it too: a second row for the same date cannot exist.
         assertThrows(org.springframework.dao.DataIntegrityViolationException.class,
@@ -382,7 +383,7 @@ class UC012AdminConfigurePublicHolidays extends SpringBrowserlessTest {
 
     @Test
     void br07_aSaveBasedOnAnOutdatedVersionIsRefusedInsteadOfOverwritingTheOtherChange() {
-        PublicHoliday opened = service.add(carol, LocalDate.of(2026, 12, 25), "Christmas");
+        PublicHoliday opened = service.add(carol, Region.DEFAULT_ID, LocalDate.of(2026, 12, 25), "Christmas");
         Long openedVersion = opened.getVersion();
         // Another administrator renames the holiday after the form was opened.
         service.update(carol, opened.getId(), LocalDate.of(2026, 12, 25), "Christmas Day", openedVersion);
@@ -401,7 +402,7 @@ class UC012AdminConfigurePublicHolidays extends SpringBrowserlessTest {
 
     @Test
     void br08_creationTimesComeFromTheApplicationClock() {
-        PublicHoliday added = service.add(carol, LocalDate.of(2026, 12, 25), "Christmas");
+        PublicHoliday added = service.add(carol, Region.DEFAULT_ID, LocalDate.of(2026, 12, 25), "Christmas");
 
         java.sql.Timestamp created = jdbc.queryForObject("select created_at from public_holiday where id = ?",
                 java.sql.Timestamp.class, added.getId());
@@ -410,9 +411,9 @@ class UC012AdminConfigurePublicHolidays extends SpringBrowserlessTest {
 
     @Test
     void br04_pastAndFutureDatesAreAllowed() {
-        service.add(carol, LocalDate.of(2020, 1, 1), "Past");
-        service.add(carol, LocalDate.of(2026, 10, 5), "Today");
-        service.add(carol, LocalDate.of(2030, 5, 1), "Future");
+        service.add(carol, Region.DEFAULT_ID, LocalDate.of(2020, 1, 1), "Past");
+        service.add(carol, Region.DEFAULT_ID, LocalDate.of(2026, 10, 5), "Today");
+        service.add(carol, Region.DEFAULT_ID, LocalDate.of(2030, 5, 1), "Future");
 
         assertEquals(3, holidays.count());
     }
@@ -421,7 +422,7 @@ class UC012AdminConfigurePublicHolidays extends SpringBrowserlessTest {
     void br06_holidaysAppearInTheMonthViewButNeverChangeTheHours() {
         var before = monthly.load(alice, YearMonth.of(2026, 9), ZoneOffset.UTC);
 
-        service.add(carol, LocalDate.of(2026, 9, 15), "Founders Day");
+        service.add(carol, Region.DEFAULT_ID, LocalDate.of(2026, 9, 15), "Founders Day");
 
         var after = monthly.load(alice, YearMonth.of(2026, 9), ZoneOffset.UTC);
         assertEquals("Founders Day", after.days().get(14).holidayName());

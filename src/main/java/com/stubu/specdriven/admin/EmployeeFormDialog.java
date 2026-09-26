@@ -50,11 +50,12 @@ class EmployeeFormDialog {
      *
      * @param existing    the employee to edit, or {@code null} to add one
      * @param departments the departments to choose from
+     * @param regions     the regions to choose from; a new employee starts with the first one
      * @param managers    the possible managers
      * @param done        told the outcome and the employee's name once the change is stored
      */
-    void open(Component owner, EmployeeRow existing, List<Choice> departments, List<Choice> managers,
-            SerializableConsumer<Result> done) {
+    void open(Component owner, EmployeeRow existing, List<Choice> departments, List<Choice> regions,
+            List<Choice> managers, SerializableConsumer<Result> done) {
         boolean editing = existing != null;
         Dialog dialog = new Dialog();
         dialog.setWidth("min(40rem, 94vw)");
@@ -83,6 +84,16 @@ class EmployeeFormDialog {
         department.setItems(departments);
         department.setItemLabelGenerator(Choice::label);
         department.setRequiredIndicatorVisible(true);
+        Select<Choice> region = new Select<>();
+        region.setLabel(owner.getTranslation("manage.region"));
+        region.setTestId("employee-region");
+        region.setItems(regions);
+        region.setItemLabelGenerator(Choice::label);
+        region.setRequiredIndicatorVisible(true);
+        region.setHelperText(owner.getTranslation("manage.region.helper"));
+        if (!editing && !regions.isEmpty()) {
+            region.setValue(regions.get(0));
+        }
         Select<Choice> manager = new Select<>();
         manager.setLabel(owner.getTranslation("manage.manager"));
         manager.setTestId("employee-manager");
@@ -97,13 +108,16 @@ class EmployeeFormDialog {
             role.setValue(existing.role());
             departments.stream().filter(choice -> choice.id() == existing.departmentId()).findFirst()
                     .ifPresent(department::setValue);
+            regions.stream().filter(choice -> choice.id() == existing.regionId()).findFirst()
+                    .ifPresent(region::setValue);
             managers.stream().filter(choice -> existing.managerId() != null && choice.id() == existing.managerId())
                     .findFirst().ifPresent(manager::setValue);
         }
 
-        FormLayout form = new FormLayout(email, firstName, lastName, role, department, manager);
+        FormLayout form = new FormLayout(email, firstName, lastName, role, department, region, manager);
         form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("34rem", 2));
         form.setColspan(email, 2);
+        form.setColspan(region, 2);
         form.setColspan(manager, 2);
         Div error = new Div();
         error.addClassName("time-dialog-error");
@@ -122,13 +136,14 @@ class EmployeeFormDialog {
         save.setTestId("employee-save");
         save.addClassName("time-dialog-button");
         save.addClickListener(event -> {
-            for (Component field : List.of(email, firstName, lastName, role, department, manager)) {
+            for (Component field : List.of(email, firstName, lastName, role, department, region, manager)) {
                 ((com.vaadin.flow.component.shared.HasValidationProperties) field).setInvalid(false);
             }
             error.setVisible(false);
             EmployeeInput input = new EmployeeInput(email.getValue(), firstName.getValue(), lastName.getValue(),
                     role.getValue(), manager.getValue() == null ? null : manager.getValue().id(),
                     department.getValue() == null ? null : department.getValue().id(),
+                    region.getValue() == null ? null : region.getValue().id(),
                     editing ? existing.version() : null);
             try {
                 EmployeeRow saved = editing ? service.update(adminId, existing.id(), input)
@@ -136,7 +151,7 @@ class EmployeeFormDialog {
                 dialog.close();
                 done.accept(new Result(editing ? Outcome.UPDATED : Outcome.CREATED, saved.fullName()));
             } catch (EmployeeValidationException invalid) {
-                show(owner, invalid, email, firstName, lastName, role, department, manager, error);
+                show(owner, invalid, email, firstName, lastName, role, department, region, manager, error);
             } catch (EmployeeNotFoundException gone) {
                 dialog.close();
                 done.accept(new Result(Outcome.GONE, ""));
@@ -169,7 +184,7 @@ class EmployeeFormDialog {
 
     private static void show(Component owner, EmployeeValidationException invalid, TextField email,
             TextField firstName, TextField lastName, Select<Role> role, Select<Choice> department,
-            Select<Choice> manager, Div error) {
+            Select<Choice> region, Select<Choice> manager, Div error) {
         boolean missing = false;
         if (invalid.has(Problem.EMAIL_EXISTS)) {
             fail(email, owner.getTranslation("manage.error.EMAIL_EXISTS"));
@@ -193,6 +208,10 @@ class EmployeeFormDialog {
         }
         if (invalid.has(Problem.DEPARTMENT_REQUIRED) || invalid.has(Problem.DEPARTMENT_UNKNOWN)) {
             fail(department, owner.getTranslation("manage.error.required"));
+            missing = true;
+        }
+        if (invalid.has(Problem.REGION_REQUIRED) || invalid.has(Problem.REGION_UNKNOWN)) {
+            fail(region, owner.getTranslation("manage.error.REGION_REQUIRED"));
             missing = true;
         }
         if (invalid.has(Problem.MANAGER_IS_SELF)) {

@@ -2,6 +2,7 @@ package com.stubu.specdriven.employee;
 
 import com.stubu.specdriven.base.TimestampListener;
 import com.stubu.specdriven.base.Timestamped;
+import com.stubu.specdriven.region.Region;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -43,6 +44,10 @@ public class Employee implements Timestamped {
 
     @Column(name = "department_id", nullable = false)
     private Long departmentId;
+
+    /** The region whose public holidays apply to the employee (UC-017). */
+    @Column(name = "region_id", nullable = false)
+    private Long regionId = Region.DEFAULT_ID;
 
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
@@ -141,6 +146,14 @@ public class Employee implements Timestamped {
 
     public Long getDepartmentId() {
         return departmentId;
+    }
+
+    public Long getRegionId() {
+        return regionId;
+    }
+
+    public void setRegionId(Long regionId) {
+        this.regionId = regionId;
     }
 
     public boolean isActive() {

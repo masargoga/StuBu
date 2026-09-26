@@ -12,6 +12,9 @@ import com.stubu.specdriven.holiday.HolidayValidationException;
 import com.stubu.specdriven.holiday.HolidayValidationException.Problem;
 import com.stubu.specdriven.holiday.PublicHoliday;
 import com.stubu.specdriven.holiday.PublicHolidayService;
+import com.stubu.specdriven.region.RegionNotFoundException;
+import com.stubu.specdriven.region.RegionRow;
+import com.stubu.specdriven.region.RegionService;
 import com.stubu.specdriven.security.EmployeePrincipal;
 import com.stubu.specdriven.timetracking.TimeEntryService;
 import com.vaadin.flow.component.button.Button;
@@ -38,14 +41,16 @@ import java.time.format.FormatStyle;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 
 /**
- * Public holidays for administrators (UC-012): the configured holidays by date, and the actions to add, edit and
- * delete them. Holidays are shown in the month views of employees and managers; they never change worked time.
+ * Public holidays for administrators (UC-012, UC-017): the holidays of one region by date, a selector for the region,
+ * the actions to add, edit and delete holidays, and the dialog to manage the regions. Holidays are shown in the
+ * month views of the employees of the region; they never change worked time.
  */
 @Route(value = PublicHolidayView.ROUTE, layout = MainLayout.class)
 @RolesAllowed("ADMIN")
@@ -59,25 +64,33 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
     }
 
     private final transient PublicHolidayService service;
+    private final transient RegionService regionService;
     private final transient TimeEntryService entryService;
     private final Long adminId;
     private transient List<PublicHoliday> holidays = List.of();
+    private transient List<RegionRow> regions = List.of();
+    private Long chosenRegionId;
     private boolean loadFailed;
     private boolean initialYearChosen;
     private Message message;
 
     private final H2 heading = new H2();
     private final Button add = new Button(VaadinIcon.PLUS.create());
+    private final Select<RegionRow> region = new Select<>();
+    private final Button manageRegions = new Button();
     private final Select<Integer> year = new Select<>();
+    private final Div toolbar = new Div();
     private final MessageBox messageBox = new MessageBox();
     private final LoadErrorBox loadErrorBox = new LoadErrorBox(this::refresh);
     private final Div emptyHint = new Div();
     private final Div list = new Div();
     private boolean updatingYear;
+    private boolean updatingRegion;
 
     public PublicHolidayView(AuthenticationContext authenticationContext, PublicHolidayService service,
-            TimeEntryService entryService) {
+            RegionService regionService, TimeEntryService entryService) {
         this.service = service;
+        this.regionService = regionService;
         this.entryService = entryService;
         this.adminId = authenticationContext.getAuthenticatedUser(Object.class)
                 .filter(EmployeePrincipal.class::isInstance).map(EmployeePrincipal.class::cast)
@@ -90,6 +103,17 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
         add.addThemeVariants(ButtonVariant.PRIMARY);
         add.addClassName("manage-add");
         add.addClickListener(event -> openForm(null));
+        region.setTestId("holiday-region");
+        region.setItemLabelGenerator(RegionRow::name);
+        region.addValueChangeListener(event -> {
+            if (!updatingRegion && event.getValue() != null) {
+                chosenRegionId = event.getValue().id();
+                render();
+            }
+        });
+        manageRegions.setTestId("manage-regions");
+        manageRegions.addThemeVariants(ButtonVariant.TERTIARY);
+        manageRegions.addClickListener(event -> new RegionManagementDialog(regionService, adminId, this::refresh).open(this));
         year.setTestId("holiday-year");
         year.setEmptySelectionAllowed(true);
         year.setItemLabelGenerator(value -> value == null ? getTranslation("holidays.allYears") : String.valueOf(value));
@@ -104,7 +128,9 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
         list.setTestId("holidays");
         list.getElement().setAttribute("role", "table");
 
-        add(heading, add, messageBox, loadErrorBox, year, emptyHint, list);
+        toolbar.addClassName("holiday-toolbar");
+        toolbar.add(region, year, manageRegions);
+        add(heading, add, messageBox, loadErrorBox, toolbar, emptyHint, list);
         load();
     }
 
@@ -118,6 +144,7 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
             return;
         }
         try {
+            regions = regionService.list(adminId);
             holidays = service.list(adminId);
             loadFailed = false;
         } catch (DataAccessException e) {
@@ -146,15 +173,18 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
         messageBox.show(message == null ? null : getTranslation(message.key(), message.parameters()), message != null && message.error());
 
         loadErrorBox.update(loadFailed, getTranslation("holidays.loadFailed"), getTranslation("time.retry"));
-        add.setEnabled(!loadFailed);
+        manageRegions.setText(getTranslation("regions.manage"));
+        renderRegions();
+        add.setEnabled(!loadFailed && chosenRegion().isPresent());
         renderYears();
-        year.setVisible(!loadFailed);
+        toolbar.setVisible(!loadFailed);
 
         Integer chosen = year.getValue();
-        List<PublicHoliday> shown = holidays.stream().filter(holiday -> chosen == null
+        String regionName = chosenRegion().map(RegionRow::name).orElse("");
+        List<PublicHoliday> shown = holidaysOfChosenRegion().stream().filter(holiday -> chosen == null
                 || holiday.getDate().getYear() == chosen).toList();
-        emptyHint.setText(chosen == null ? getTranslation("holidays.none") : getTranslation("holidays.noneInYear",
-                chosen));
+        emptyHint.setText(chosen == null ? getTranslation("holidays.none", regionName)
+                : getTranslation("holidays.noneInYear", regionName, chosen));
         emptyHint.setVisible(!loadFailed && shown.isEmpty());
         list.setVisible(!loadFailed && !shown.isEmpty());
         if (!list.isVisible()) {
@@ -190,12 +220,34 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
         }
     }
 
-    /** The years with holidays and the current year; the current year is chosen the first time. */
+    private Optional<RegionRow> chosenRegion() {
+        return regions.stream().filter(candidate -> chosenRegionId != null && candidate.id() == chosenRegionId)
+                .findFirst();
+    }
+
+    private List<PublicHoliday> holidaysOfChosenRegion() {
+        return holidays.stream().filter(holiday -> chosenRegionId != null
+                && holiday.getRegionId().longValue() == chosenRegionId.longValue()).toList();
+    }
+
+    /** The regions to choose from; the chosen one stays chosen, else the first region (by name) is. */
+    private void renderRegions() {
+        updatingRegion = true;
+        region.setLabel(getTranslation("holidays.region"));
+        region.setItems(regions);
+        if (chosenRegion().isEmpty()) {
+            chosenRegionId = regions.isEmpty() ? null : regions.get(0).id();
+        }
+        region.setValue(chosenRegion().orElse(null));
+        updatingRegion = false;
+    }
+
+    /** The years with holidays in the chosen region and the current year; the current year is chosen the first time. */
     private void renderYears() {
         int currentYear = entryService.currentDate(entryService.defaultZone()).getYear();
         TreeSet<Integer> years = new TreeSet<>(Comparator.reverseOrder());
         years.add(currentYear);
-        holidays.forEach(holiday -> years.add(holiday.getDate().getYear()));
+        holidaysOfChosenRegion().forEach(holiday -> years.add(holiday.getDate().getYear()));
         Integer keep = year.getValue();
         updatingYear = true;
         year.setLabel(getTranslation("holidays.year"));
@@ -236,12 +288,19 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
         name.setMaxLength(255);
         name.setRequiredIndicatorVisible(true);
         name.setWidthFull();
+        long regionId = editing ? existing.getRegionId() : chosenRegionId;
+        TextField regionShown = new TextField(getTranslation("holidays.region"));
+        regionShown.setTestId("holiday-region-shown");
+        regionShown.setReadOnly(true);
+        regionShown.setWidthFull();
+        regions.stream().filter(candidate -> candidate.id() == regionId).findFirst()
+                .ifPresent(shown -> regionShown.setValue(shown.name()));
         if (editing) {
             date.setValue(existing.getDate());
             name.setValue(existing.getName());
         }
         DialogError error = new DialogError();
-        Div body = new Div(date, name, error);
+        Div body = new Div(regionShown, date, name, error);
         body.addClassNames("time-dialog-content", "review-dialog-content");
         dialog.add(body);
 
@@ -259,13 +318,14 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
             error.setVisible(false);
             try {
                 PublicHoliday saved = editing ? service.update(adminId, existing.getId(), date.getValue(),
-                        name.getValue(), existing.getVersion()) : service.add(adminId, date.getValue(), name.getValue());
+                        name.getValue(), existing.getVersion())
+                        : service.add(adminId, regionId, date.getValue(), name.getValue());
                 message = editing ? new Message("holidays.updated", false)
                         : new Message("holidays.added", false, saved.getName(), formatted(saved.getDate()));
             } catch (HolidayValidationException invalid) {
                 show(invalid, date, name);
                 return;
-            } catch (HolidayNotFoundException gone) {
+            } catch (HolidayNotFoundException | RegionNotFoundException gone) {
                 message = new Message("holidays.gone", true);
             } catch (EditConflictException conflict) {
                 message = new Message("holidays.conflict", true);

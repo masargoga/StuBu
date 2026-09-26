@@ -3,6 +3,8 @@ package com.stubu.specdriven.monthlytimesheet;
 import com.stubu.specdriven.employee.Employee;
 import com.stubu.specdriven.employee.EmployeeRepository;
 import com.stubu.specdriven.holiday.PublicHolidayRepository;
+import com.stubu.specdriven.region.Region;
+import com.stubu.specdriven.region.RegionRepository;
 import com.stubu.specdriven.timesheet.Timesheet;
 import com.stubu.specdriven.timesheet.TimesheetService;
 import com.stubu.specdriven.timetracking.DaySummary;
@@ -31,14 +33,16 @@ public class MonthlyTimesheetService {
     private final TimesheetService timesheets;
     private final TimeEntryRepository entries;
     private final PublicHolidayRepository holidays;
+    private final RegionRepository regions;
     private final EmployeeRepository employees;
     private final Clock clock;
 
     public MonthlyTimesheetService(TimesheetService timesheets, TimeEntryRepository entries,
-            PublicHolidayRepository holidays, EmployeeRepository employees, Clock clock) {
+            PublicHolidayRepository holidays, RegionRepository regions, EmployeeRepository employees, Clock clock) {
         this.timesheets = timesheets;
         this.entries = entries;
         this.holidays = holidays;
+        this.regions = regions;
         this.employees = employees;
         this.clock = clock;
     }
@@ -85,8 +89,11 @@ public class MonthlyTimesheetService {
             byDay.computeIfAbsent(entry.getCheckInAt().atZone(zone).toLocalDate(), day -> new ArrayList<>())
                     .add(entry);
         }
+        // The holidays are those of the region of the employee whose timesheet this is, whoever looks at it (UC-017).
+        Long regionId = employees.findById(employeeId).map(Employee::getRegionId).orElse(Region.DEFAULT_ID);
+        String regionName = regions.findById(regionId).map(Region::getName).orElse(null);
         Map<LocalDate, String> holidayNames = new TreeMap<>();
-        holidays.findByDateBetweenOrderByDate(month.atDay(1), month.atEndOfMonth())
+        holidays.findByRegionIdAndDateBetweenOrderByDate(regionId, month.atDay(1), month.atEndOfMonth())
                 .forEach(holiday -> holidayNames.put(holiday.getDate(), holiday.getName()));
 
         // When the timesheet is not a draft, none of its entries can be corrected.
@@ -107,7 +114,7 @@ public class MonthlyTimesheetService {
             totalWorked = totalWorked.plus(summary.worked());
             totalBreaks = totalBreaks.plus(summary.breaks());
         }
-        return new MonthlyTimesheet(month, timesheet.getStatus(), timesheet.getSubmittedAt(),
+        return new MonthlyTimesheet(month, regionName, timesheet.getStatus(), timesheet.getSubmittedAt(),
                 timesheet.getApprovedAt(), nameOf(timesheet.getApprovedBy()), timesheet.getRejectedAt(),
                 timesheet.getRejectionReason(), List.copyOf(days), totalWorked, totalBreaks,
                 SubmissionRules.blocker(month, timesheet.getStatus(), monthEntries, currentMonth(zone)).orElse(null));

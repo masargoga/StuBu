@@ -8,6 +8,7 @@ import com.stubu.specdriven.base.MainLayout;
 import com.stubu.specdriven.base.MessageBox;
 import com.stubu.specdriven.monthlytimesheet.MonthTimeline;
 import com.stubu.specdriven.monthlytimesheet.MonthlyTimesheet;
+import com.stubu.specdriven.monthlytimesheet.RegionNote;
 import com.stubu.specdriven.security.EmployeePrincipal;
 import com.stubu.specdriven.timesheet.TimesheetStatus;
 import com.stubu.specdriven.timetracking.DurationFormat;
@@ -83,6 +84,7 @@ public class TimesheetReviewView extends VerticalLayout implements HasUrlParamet
     private final Span total = new Span();
     private final Span breaks = new Span();
     private final MonthTimeline timeline = new MonthTimeline();
+    private final RegionNote regionNote = new RegionNote();
 
     public TimesheetReviewView(AuthenticationContext authenticationContext, TimesheetReviewService service,
             TimeEntryService entryService) {
@@ -127,7 +129,7 @@ public class TimesheetReviewView extends VerticalLayout implements HasUrlParamet
 
         content.setPadding(false);
         content.setSpacing(true);
-        content.add(statusBox, totals, timeline);
+        content.add(statusBox, totals, regionNote, timeline);
         add(back, heading, messageBox, loadErrorBox, content);
     }
 
@@ -214,6 +216,7 @@ public class TimesheetReviewView extends VerticalLayout implements HasUrlParamet
         renderStatus(sheet, locale);
         total.setText(getTranslation("timesheet.total", DurationFormat.format(sheet.totalWorked())));
         breaks.setText(getTranslation("time.break", DurationFormat.format(sheet.totalBreaks())));
+        regionNote.show(sheet);
         timeline.show(sheet, zone, entryService.now(), entryService.currentDate(zone));
     }
 

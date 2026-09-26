@@ -190,6 +190,7 @@ public class EmployeeDetailView extends VerticalLayout implements HasUrlParamete
         info.add(field("employees.email", employee.email()),
                 field("employees.role", getTranslation("role." + employee.role().name())),
                 field("manage.department", employee.departmentName()),
+                field("manage.region", employee.regionName()),
                 field("manage.manager", employee.managerName() == null ? getTranslation("manage.manager.none")
                         : employee.managerName()),
                 field("employeeDetail.created", dateTime(employee.createdAt(), locale)),

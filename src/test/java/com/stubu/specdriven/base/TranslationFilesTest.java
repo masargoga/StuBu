@@ -137,8 +137,8 @@ class TranslationFilesTest {
                 continue;
             }
             Object[] arguments = { "AAA", "BBB", "CCC", "DDD", "EEE" };
-            if (key.startsWith("audit.count") || key.startsWith("manage.count") || key.equals("holidays.noneInYear")) {
-                arguments = new Object[] { 1234, "BBB" };
+            if (key.startsWith("audit.count") || key.startsWith("manage.count") || key.startsWith("regions.inUse.") || key.equals("holidays.noneInYear")) {
+                arguments = key.equals("holidays.noneInYear") ? new Object[] { "AAA", 2026 } : new Object[] { 1234, "BBB" };
             }
             String formatted = new MessageFormat(text, locale).format(arguments);
             assertFalse(formatted.contains("{"), key + " left a placeholder: " + formatted);

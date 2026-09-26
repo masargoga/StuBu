@@ -4,14 +4,15 @@ package com.stubu.specdriven.employee;
  * The data of the employee form. On editing, the email is ignored: it never changes once the employee exists.
  *
  * @param managerId       the employee's manager, or {@code null} for none
+ * @param regionId        the region whose public holidays apply to the employee; required (UC-017)
  * @param expectedVersion on editing, the version of the employee the form was opened with: the change is refused
  *                        when somebody else changed the employee since; {@code null} skips the check
  */
 public record EmployeeInput(String email, String firstName, String lastName, Role role, Long managerId,
-        Long departmentId, Long expectedVersion) {
+        Long departmentId, Long regionId, Long expectedVersion) {
 
     public EmployeeInput(String email, String firstName, String lastName, Role role, Long managerId,
-            Long departmentId) {
-        this(email, firstName, lastName, role, managerId, departmentId, null);
+            Long departmentId, Long regionId) {
+        this(email, firstName, lastName, role, managerId, departmentId, regionId, null);
     }
 }

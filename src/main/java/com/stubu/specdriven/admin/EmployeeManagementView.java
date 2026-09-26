@@ -77,6 +77,7 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
     private transient EmployeeOverviewService.Page result = new EmployeeOverviewService.Page(List.of(), 0, 0, 1,
             true);
     private transient List<Choice> departments = List.of();
+    private transient List<Choice> regions = List.of();
     private transient List<Choice> managers = List.of();
     private boolean loadFailed;
     private Message message;
@@ -215,6 +216,7 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
             page = result.page(); // the list shrank: the last page
             anyEmployees = result.anyEmployees();
             departments = service.departments(adminId);
+            regions = service.regions(adminId);
             managers = service.managerCandidates(adminId);
             loadFailed = false;
         } catch (DataAccessException e) {
@@ -360,7 +362,7 @@ public class EmployeeManagementView extends VerticalLayout implements HasDynamic
             // The current manager may be inactive: keep them, or saving would silently drop the manager.
             possibleManagers.add(new Choice(existing.managerId(), existing.managerName()));
         }
-        new EmployeeFormDialog(service, adminId).open(this, existing, departments, possibleManagers, result -> {
+        new EmployeeFormDialog(service, adminId).open(this, existing, departments, regions, possibleManagers, result -> {
             message = switch (result.outcome()) {
                 case CREATED -> new Message("manage.created", result.name(), false);
                 case UPDATED -> new Message("manage.updated", result.name(), false);

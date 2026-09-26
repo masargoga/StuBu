@@ -111,6 +111,7 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
     private final Div emptyHint = new Div();
     private final RadioButtonGroup<ViewMode> viewMode = new RadioButtonGroup<>();
     private final MonthTimeline timeline = new MonthTimeline();
+    private final RegionNote regionNote = new RegionNote();
     private final Grid<DayLine> table = new Grid<>();
 
     public MonthlyTimesheetView(AuthenticationContext authenticationContext, MonthlyTimesheetService service,
@@ -185,7 +186,7 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
 
         content.setPadding(false);
         content.setSpacing(true);
-        content.add(statusBox, totals, emptyHint, viewMode, timeline, table);
+        content.add(statusBox, totals, emptyHint, viewMode, regionNote, timeline, table);
         add(heading, navigation, messageBox, loadErrorBox, content);
         load();
     }
@@ -399,6 +400,7 @@ public class MonthlyTimesheetView extends VerticalLayout implements BeforeEnterO
         viewMode.setLabel(getTranslation("timesheet.view.label"));
         viewMode.setItemLabelGenerator(item -> getTranslation("timesheet.view." + item.name().toLowerCase(Locale.ROOT)));
         viewMode.setValue(mode);
+        regionNote.show(sheet);
         timeline.setVisible(mode == ViewMode.TIMELINE);
         table.setVisible(mode == ViewMode.TABLE);
         Instant now = entryService.now();

@@ -10,10 +10,11 @@ the pieces fit together. All timestamps are absolute UTC instants taken from the
 Department 1 ── n Employee ──(manager)── Employee
                     │
                     ├── n TimeEntry     one work period: check-in .. check-out
+                    ├── 1 Region        whose public holidays apply
                     ├── n Timesheet     one per employee and month, with a status
                     └── 0..1 EmployeeSetting   personal settings (language)
 
-PublicHoliday                            a date and a name, informational only
+Region 1 ── n PublicHoliday              a date and a name per region, informational only
 AuditLogEntry                            append-only history of changes and logins
 ```
 
@@ -24,7 +25,8 @@ AuditLogEntry                            append-only history of changes and logi
 | `TimeEntry` | A work period. Open while `checkOutAt` is empty | Unique `open_employee_id` allows only one open period per employee, even across pods; a check-out never precedes the check-in; `version` |
 | `EmployeeSetting` | Personal settings of an employee: one row per employee (created when the first setting is saved), one typed column per setting; the language (`en`, `de`, `es`, `fr`, or empty = not chosen) is the first, a theme can follow | Primary key is the employee id; the database only accepts the four codes; changes are not audited (UC-016); `version` |
 | `Timesheet` | The month of an employee with its approval state | Unique per employee and month; created the first time the month is opened; a month without a record counts as a draft; `version` |
-| `PublicHoliday` | Marks a date in the month view | Never changes worked time; unique date; `version` |
+| `Region` | An area with its own public holidays; every employee works in one | Unique name; created by administrators; the migration creates "Default"; cannot be deleted while used; `version` |
+| `PublicHoliday` | Marks a date in the month view of the employees of its region | Never changes worked time; unique date per region; `version` |
 | `AuditLogEntry` | Who did what, when, with old and new values (JSON) and a reason | Written in the same transaction as the change; the repository has no update or delete |
 
 Breaks are **derived**: the time between two work periods of a day is break time. Nobody records a break.
@@ -57,7 +59,7 @@ approved month is locked. A concurrent second decision or submission fails throu
 
 * One open work period per employee (database constraint).
 * A check-out is never before its check-in (database constraint; the service also clamps a clock adjustment).
-* One timesheet per employee and month; one public holiday per date; one employee per email (all unique constraints).
+* One timesheet per employee and month; one public holiday per region and date; one employee per email (all unique constraints).
 * A manager is never above themselves in the chain of managers; the last active administrator cannot be deactivated
   or demoted.
 * An administrator never approves or rejects; nobody decides on their own timesheet.
@@ -76,6 +78,7 @@ Flyway migrations in `src/main/resources/db/migration` (portable SQL, identical 
 | `V5__optimistic_locking.sql` | `version` on `employee` and `public_holiday` |
 | `V6__audit_log_user_indexes.sql` | indexes for the audit log's user filter and the last login |
 | `V8__employee_setting.sql` | `employee_setting` with the language of an employee |
+| `V9__region.sql` | `region`, the region of employees and holidays (existing data goes to "Default"), the holiday date unique per region |
 | `db/vendor/postgresql/V7__audit_log_append_only.sql` | PostgreSQL only: triggers that refuse `UPDATE`, `DELETE` and `TRUNCATE` on `audit_log` |
 
 Query notes for large installations (about 10,000 employees): the employee list is searched, sorted and paged in the

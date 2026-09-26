@@ -16,6 +16,7 @@ Core user identity and organizational context.
 | role | Enum | EMPLOYEE, MANAGER, ADMIN | Determines access rights. MANAGER and ADMIN also hold the EMPLOYEE role at login (they record their own time) |
 | managerId | Long (FK) | Nullable | References another Employee if this employee has a manager |
 | departmentId | Long (FK) | Not null | References Department |
+| regionId | Long (FK) | Not null | References Region; decides which public holidays the employee sees (UC-017) |
 | isActive | Boolean | Not null, default true | Soft delete for historical tracking |
 | version | Long | Not null | Optimistic locking: an administrator's save based on an older version is refused |
 | createdAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
@@ -75,13 +76,25 @@ Monthly timesheet container with approval workflow.
 | updatedAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
 | Unique constraint | (employeeId, year, month) | | One timesheet per employee per month. Columns are named `period_year` / `period_month` (YEAR and MONTH are reserved words in H2). UC-005 creates the record (DRAFT) the first time a month is viewed; a month without a record still counts as DRAFT. The submission and approval fields exist since UC-005 but are only written by UC-006 and UC-007 |
 
-### PublicHoliday
-Calendar configuration for holidays. UC-005 only reads it (management is UC-012).
+### Region
+The area whose public holidays apply to the employees who work there, for example a country or a state (UC-017). Kept by administrators. The migration creates the region "Default" (id 1).
 
 | Field | Type | Constraints | Notes |
 |-------|------|-------------|-------|
 | id | Long (PK) | Auto-generated | |
-| date | LocalDate | Not null, Unique | Holiday date |
+| name | String(100) | Not null, Unique | Trimmed; also unique ignoring case (checked by the service) |
+| version | Long | Not null | Optimistic locking on rename |
+| createdAt | Instant (UTC) | Not null | Set by the server |
+| updatedAt | Instant (UTC) | Not null | Set by the server |
+
+### PublicHoliday
+Calendar configuration for the holidays of one region. UC-005, UC-007 and UC-009 only read it (management is UC-012 and UC-017).
+
+| Field | Type | Constraints | Notes |
+|-------|------|-------------|-------|
+| id | Long (PK) | Auto-generated | |
+| regionId | Long (FK) | Not null | References Region; never changes |
+| date | LocalDate | Not null, Unique per region | Holiday date; the same date can be a holiday in several regions |
 | name | String | Not null | Holiday name |
 | version | Long | Not null | Optimistic locking |
 | createdAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
@@ -107,6 +120,7 @@ Immutable audit trail for compliance and troubleshooting.
 Department
   |
   └─ Employee (many-to-one)
+       ├─ Region (many-to-one: the region of the employee)
        |
        ├─ Manager (self-referencing FK to Employee)
        ├─ EmployeeSetting (one-to-one, optional)
@@ -115,8 +129,9 @@ Department
        └─ Timesheet (one-to-many, unique per year/month)
             └─ References TimeEntries for the month
 
-PublicHoliday
-  └─ Used for calendar calculations (no direct FK)
+Region
+  └─ PublicHoliday (one-to-many, date unique per region)
+     Used for the month views of the employees of the region
 
 AuditLog (one-to-many relationships)
   ├─ Employee (audit actor)

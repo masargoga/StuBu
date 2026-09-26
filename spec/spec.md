@@ -736,7 +736,7 @@ The application does not calculate expected working hours based on public holida
 
 The UI should visually distinguish holidays from normal working days.
 
-The implementation should leave room for future country/region-specific holiday configuration without unnecessarily complicating the first version.
+Public holidays belong to a region (UC-017): administrators keep a list of regions, every employee works in one region and sees only that region's holidays, and a manager or administrator looking at an employee's timesheet sees the holidays of the employee's region.
 
 ---
 
@@ -1065,7 +1065,17 @@ Potential fields:
 Potential fields:
 
 * id
+* regionId
 * date
+* name
+* createdAt
+* updatedAt
+
+## Region
+
+Potential fields:
+
+* id
 * name
 * createdAt
 * updatedAt

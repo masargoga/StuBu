@@ -20,6 +20,12 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     List<Employee> findByDepartmentId(Long departmentId);
 
+    long countByRegionId(Long regionId);
+
+    /** How many employees work in each region: rows of region id and count. */
+    @org.springframework.data.jpa.repository.Query("select e.regionId, count(e) from Employee e group by e.regionId")
+    List<Object[]> countByRegion();
+
     /** Whether the employee is active and their current role; empty if the employee no longer exists. */
     @org.springframework.data.jpa.repository.Query("select new com.stubu.specdriven.employee.EmployeeAccess(e.active, e.role) from Employee e where e.id = :id")
     Optional<EmployeeAccess> findAccessById(@org.springframework.data.repository.query.Param("id") Long id);

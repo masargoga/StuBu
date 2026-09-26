@@ -1,5 +1,6 @@
 package com.stubu.specdriven.usecases.uc011_admin_manage_employees;
 
+import com.stubu.specdriven.region.Region;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -192,7 +193,7 @@ class UC011AdminManageEmployees extends SpringBrowserlessTest {
         int audits = auditLog.findAllByOrderByIdAsc().size();
 
         admin.update(carol, alice, new EmployeeInput(row.email(), row.firstName(), row.lastName(), row.role(),
-                row.managerId(), row.departmentId()));
+                row.managerId(), row.departmentId(), row.regionId()));
 
         assertEquals(audits, auditLog.findAllByOrderByIdAsc().size());
     }
@@ -256,7 +257,7 @@ class UC011AdminManageEmployees extends SpringBrowserlessTest {
         for (String email : List.of("no-at-sign.example.com", "a@b", "two@@example.com", "spaces in@example.com", "")) {
             EmployeeValidationException invalid = assertThrows(EmployeeValidationException.class,
                     () -> admin.create(carol, new EmployeeInput(email, "Zoe", "Zimmer", Role.EMPLOYEE, null,
-                            sales.getId())), email);
+                            sales.getId(), Region.DEFAULT_ID)), email);
             assertTrue(invalid.has(Problem.EMAIL_INVALID), email);
         }
         openList();
@@ -377,7 +378,7 @@ class UC011AdminManageEmployees extends SpringBrowserlessTest {
 
     @Test
     void br04_onlyActiveAdministratorsMayManageEmployees() {
-        EmployeeInput input = new EmployeeInput(NEW_EMAIL, "Zoe", "Zimmer", Role.EMPLOYEE, null, sales.getId());
+        EmployeeInput input = new EmployeeInput(NEW_EMAIL, "Zoe", "Zimmer", Role.EMPLOYEE, null, sales.getId(), Region.DEFAULT_ID);
         for (long notAdmin : List.of(bob, alice)) {
             assertThrows(AdminOnlyException.class, () -> admin.create(notAdmin, input));
             assertThrows(AdminOnlyException.class, () -> overview.search(notAdmin,
@@ -398,11 +399,11 @@ class UC011AdminManageEmployees extends SpringBrowserlessTest {
     void br08_aSaveBasedOnAnOutdatedVersionIsRefusedInsteadOfOverwritingTheOtherChange() {
         EmployeeRow opened = rowOf(alice);
         // Another administrator changes Alice after the form was opened.
-        admin.update(carol, alice, new EmployeeInput(null, "Alicia", "Employee", Role.EMPLOYEE, bob, engineering.getId()));
+        admin.update(carol, alice, new EmployeeInput(null, "Alicia", "Employee", Role.EMPLOYEE, bob, engineering.getId(), Region.DEFAULT_ID));
         int audits = auditLog.findAllByOrderByIdAsc().size();
 
         assertThrows(EditConflictException.class, () -> admin.update(carol, alice, new EmployeeInput(null, "Alice",
-                "Employee-Smith", Role.EMPLOYEE, bob, engineering.getId(), opened.version())));
+                "Employee-Smith", Role.EMPLOYEE, bob, engineering.getId(), Region.DEFAULT_ID, opened.version())));
 
         Employee stored = employees.findById(alice).orElseThrow();
         assertEquals("Alicia", stored.getFirstName(), "The other change is still there");
@@ -411,7 +412,7 @@ class UC011AdminManageEmployees extends SpringBrowserlessTest {
 
         EmployeeRow current = rowOf(alice);
         admin.update(carol, alice, new EmployeeInput(null, "Alicia", "Employee-Smith", Role.EMPLOYEE, bob,
-                engineering.getId(), current.version()));
+                engineering.getId(), Region.DEFAULT_ID, current.version()));
         assertEquals("Employee-Smith", employees.findById(alice).orElseThrow().getLastName(),
                 "With the current version the change is stored");
     }
@@ -431,7 +432,7 @@ class UC011AdminManageEmployees extends SpringBrowserlessTest {
     @Test
     void br07_theEmailCannotBeChangedByAnUpdate() {
         admin.update(carol, alice, new EmployeeInput("someone.else@example.com", "Alice", "Employee", Role.EMPLOYEE,
-                bob, engineering.getId()));
+                bob, engineering.getId(), Region.DEFAULT_ID));
 
         assertEquals("alice.employee@example.com", employees.findById(alice).orElseThrow().getEmail());
     }
@@ -439,14 +440,14 @@ class UC011AdminManageEmployees extends SpringBrowserlessTest {
     @Test
     void theManagerHierarchyStaysSensible() {
         EmployeeValidationException self = assertThrows(EmployeeValidationException.class, () -> admin.update(carol,
-                bob, new EmployeeInput("x@example.com", "Bob", "Manager", Role.MANAGER, bob, engineering.getId())));
+                bob, new EmployeeInput("x@example.com", "Bob", "Manager", Role.MANAGER, bob, engineering.getId(), Region.DEFAULT_ID)));
         assertTrue(self.has(Problem.MANAGER_IS_SELF));
         EmployeeValidationException cycle = assertThrows(EmployeeValidationException.class, () -> admin.update(carol,
-                bob, new EmployeeInput("x@example.com", "Bob", "Manager", Role.MANAGER, alice, engineering.getId())),
+                bob, new EmployeeInput("x@example.com", "Bob", "Manager", Role.MANAGER, alice, engineering.getId(), Region.DEFAULT_ID)),
                 "Bob manages Alice, so Alice cannot be Bob's manager");
         assertTrue(cycle.has(Problem.MANAGER_CYCLE));
         EmployeeValidationException unknown = assertThrows(EmployeeValidationException.class, () -> admin.create(carol,
-                new EmployeeInput(NEW_EMAIL, "Zoe", "Zimmer", Role.EMPLOYEE, 999_999L, sales.getId())));
+                new EmployeeInput(NEW_EMAIL, "Zoe", "Zimmer", Role.EMPLOYEE, 999_999L, sales.getId(), Region.DEFAULT_ID)));
         assertTrue(unknown.has(Problem.MANAGER_UNKNOWN));
         List<String> candidates = admin.managerCandidates(carol).stream().map(choice -> choice.label()).toList();
         assertTrue(candidates.contains("Bob Manager") && candidates.contains("Carol Admin"), candidates.toString());
@@ -468,7 +469,7 @@ class UC011AdminManageEmployees extends SpringBrowserlessTest {
             admin.deactivate(carol, olga, null); // two administrators: one may go
             EmployeeValidationException lastAdmin = assertThrows(EmployeeValidationException.class,
                     () -> admin.update(carol, carol, new EmployeeInput("x@example.com", "Carol", "Admin", Role.MANAGER,
-                            null, engineering.getId())));
+                            null, engineering.getId(), Region.DEFAULT_ID)));
             assertTrue(lastAdmin.has(Problem.LAST_ADMIN));
             assertEquals(Role.ADMIN, employees.findById(carol).orElseThrow().getRole());
         } finally {
