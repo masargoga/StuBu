@@ -871,12 +871,14 @@ The application supports:
 
 * German
 * English
+* Spanish
+* French
 
 The UI must be internationalized rather than containing hard-coded user-facing strings.
 
 Dates and times should follow the user's locale.
 
-The architecture should allow additional languages to be added later.
+Each user chooses the language of the application in a language selector (UC-016); the choice is stored in the employee's settings. The architecture should allow additional languages to be added later.
 
 ---
 

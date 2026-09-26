@@ -1,5 +1,6 @@
 package com.stubu.specdriven.base;
 
+import com.stubu.specdriven.settings.AppLanguage;
 import com.vaadin.flow.i18n.I18NProvider;
 import java.text.MessageFormat;
 import java.util.List;
@@ -11,8 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * Loads the UI texts from {@code vaadin-i18n/translations*.properties}: English (the default file) and
- * German. Unlike Vaadin's default provider it never falls back to the server's JVM locale, so an
+ * Loads the UI texts from {@code vaadin-i18n/translations*.properties}: English (the default file), German,
+ * Spanish and French (UC-016). A text that is missing in a language falls back to the English one. Unlike Vaadin's default provider it never falls back to the server's JVM locale, so an
  * English browser gets English even on a server that runs with a German default locale.
  */
 @Component
@@ -24,7 +25,8 @@ public class TranslationProvider implements I18NProvider {
             .getNoFallbackControl(ResourceBundle.Control.FORMAT_PROPERTIES);
 
     /** The first locale is the default for browsers that ask for anything else. */
-    private static final List<Locale> PROVIDED_LOCALES = List.of(Locale.ENGLISH, Locale.GERMAN);
+    private static final List<Locale> PROVIDED_LOCALES = java.util.Arrays.stream(AppLanguage.values())
+            .map(AppLanguage::locale).toList();
 
     @Override
     public List<Locale> getProvidedLocales() {

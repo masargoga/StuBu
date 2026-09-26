@@ -1627,3 +1627,76 @@ vaadin-dialog::part(overlay) {
   font-size: var(--aura-font-size-l);
   font-weight: var(--aura-font-weight-medium);
 }
+
+/* UC-016: language selector */
+.flag {
+  display: inline-block;
+  flex: none;
+  width: 1.5rem;
+  height: 1rem;
+  border-radius: 2px;
+  background: center / cover no-repeat;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--aura-neutral) 25%, transparent);
+}
+
+.flag-gb {
+  background-image: url("icons/flags/gb.svg");
+}
+
+.flag-de {
+  background-image: url("icons/flags/de.svg");
+}
+
+.flag-es {
+  background-image: url("icons/flags/es.svg");
+}
+
+.flag-fr {
+  background-image: url("icons/flags/fr.svg");
+}
+
+.language-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--vaadin-gap-s);
+}
+
+.language-selector {
+  width: auto;
+  min-width: 10.5rem;
+  font-size: var(--aura-font-size-l);
+}
+
+.login-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vaadin-gap-m);
+  width: 100%;
+}
+
+.login-top .app-logo {
+  margin-bottom: 0;
+}
+
+/* On phones only the flag is shown in the closed field (the names stay in the list and for screen readers). */
+@media (max-width: 640px) {
+  .language-selector {
+    width: 4.75rem;
+    min-width: 0;
+    flex: none;
+  }
+
+  .language-selector vaadin-select-value-button {
+    min-width: 0;
+  }
+
+  .language-selector vaadin-select-value-button .language-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

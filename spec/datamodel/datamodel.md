@@ -21,6 +21,17 @@ Core user identity and organizational context.
 | createdAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
 | updatedAt | Instant (UTC) | Not null | Audit timestamp, set by the server |
 
+### EmployeeSetting
+Personal settings of an employee (UC-016). One row per employee, created when the first setting is saved; every setting is one typed column, so a further setting (for example a theme) is a further column.
+
+| Field | Type | Constraints | Notes |
+|-------|------|-------------|-------|
+| employeeId | Long (PK, FK) | References Employee | One row per employee |
+| language | String(5) | Nullable; only `en`, `de`, `es`, `fr` | Application language; empty means "not chosen" (browser language, else English) |
+| version | Long | Not null | Optimistic locking |
+| createdAt | Instant (UTC) | Not null | Set by the server |
+| updatedAt | Instant (UTC) | Not null | Set by the server |
+
 ### Department
 Organizational unit for grouping employees.
 
@@ -98,6 +109,7 @@ Department
   └─ Employee (many-to-one)
        |
        ├─ Manager (self-referencing FK to Employee)
+       ├─ EmployeeSetting (one-to-one, optional)
        ├─ TimeEntry (one-to-many)
        │    └─ Date groups time entries
        └─ Timesheet (one-to-many, unique per year/month)

@@ -1,7 +1,7 @@
 # User guide
 
-The main workflows of StuBu from the point of view of the people who use it. The application is available in English
-and German (it follows the language of your browser), works on phones, tablets and desktops, and uses large,
+The main workflows of StuBu from the point of view of the people who use it. The application is available in English,
+German, Spanish and French (see "Choosing your language"), works on phones, tablets and desktops, and uses large,
 high-contrast controls.
 
 ## Signing in
@@ -12,6 +12,14 @@ company configured). You need an **active employee record with the same email ad
 
 If an administrator deactivates you or changes your role while you are signed in, you are sent back to the login page
 within a few seconds and sign in again.
+
+## Choosing your language
+
+Open the language selector at the top right of every page (on the sign-in page it is in the corner of the card) and
+choose English, Deutsch, Español or Français. The page changes at once. Your choice is remembered in the browser and,
+once you are signed in, in your settings, so it also applies on your other devices and in the emails you receive. On a
+phone the selector shows only the flag. Until you choose, the language of your browser is used if it is one of the four,
+otherwise English.
 
 ## Employees
 

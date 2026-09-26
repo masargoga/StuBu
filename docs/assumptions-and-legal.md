@@ -28,7 +28,7 @@ None of it is legal advice.
 | A8 | Employees are never deleted, only deactivated, so that time records and audit entries keep their meaning. There is no "reactivate" action yet. | UC-011 |
 | A9 | An open work period (checked in, not out) at the end of a month blocks submitting that month; the employee must check out or correct it first. | UC-006 |
 | A10 | The audit log is kept without an expiry (its retention is not part of the one-year requirement). Login failures store the attempted email address. | UC-013 |
-| A11 | The interface is available in English and German and follows the language of the browser (there is no language switch in the application). Emails use one configured language. | UC-001 |
+| A11 | The interface is available in English, German, Spanish and French. Everybody chooses the language in a selector (also on the login page); until then it follows the language of the browser. The choice is stored per employee, and emails use the recipient's language (the configured language when none is stored). The Spanish and French texts are first drafts and need a review by native speakers. | UC-001, UC-016 |
 | A12 | The timelines show 06:00 to 20:00 and widen in whole hours to fit every work period, instead of the full 00:00-24:00 scale that spec.md section 12 names for the timesheet page (the full scale made the bars too small to read; a change agreed with the product owner in the design refresh). Every period is always fully visible. | UC-002, UC-005, design-system.md |
 
 ## To be validated by legal, works council and business stakeholders

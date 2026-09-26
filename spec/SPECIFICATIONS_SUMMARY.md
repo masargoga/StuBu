@@ -175,7 +175,7 @@ PublicHoliday (standalone, informational)
 
 ## Internationalization
 
-- **Languages:** German, English
+- **Languages:** English, German, Spanish, French (chosen by the user, UC-016)
 - **Date/Time:** Follow user locale
 - **Labels/Messages:** All UI strings externalized
 
@@ -284,7 +284,7 @@ and assumed while building is in [docs/assumptions-and-legal.md](../docs/assumpt
 
 ### Phase 5: Polish & Deployment
 - UI refinement & accessibility
-- Internationalization (German/English)
+- Internationalization (English, German, Spanish, French)
 - Performance optimization
 - Security hardening
 - Docker/Kubernetes deployment

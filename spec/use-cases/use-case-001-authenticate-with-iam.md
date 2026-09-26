@@ -12,6 +12,8 @@
 
 > A use case cannot be marked as **Implemented** unless all criteria in the use case implementation workflow are fulfilled.
 
+> **Revision (UC-016):** The login page has a language selector in the corner of its card; the interface language is no longer only the language of the browser.
+>
 > **Revision:** The login page is a card with the icon mark and one button per configured provider ("Sign in with Google", "Sign in with Microsoft", with the provider's logo); a provider without a client id is not offered. After login the session follows the employee record: when the employee is deactivated, deleted or given another role, the session ends within a few seconds (`stubu.security.recheck-interval`, default 5 seconds) and the user is sent to the login page (AF-5, BR-06). The login page, its stylesheet and the icon mark can be opened without signing in (`/login`, `/styles.css`, `/icons/**`). The `lang` attribute of the page is the language of the interface (English or German, following the browser). Health probes for Docker and Kubernetes (`/actuator/health/liveness`, `/actuator/health/readiness`) are the only other pages that need no login.
 
 ---

@@ -155,7 +155,7 @@ public abstract class E2ETest {
     /** Signs in through the test identity provider, like a user clicking the login button and typing an email. */
     protected void signIn(String email) {
         page.navigate(url("/login"));
-        page.getByText("Sign in with Test IdP").click();
+        page.getByTestId("login-mock").click();
         page.locator("#email").fill(email);
         page.locator("#email").press("Enter");
         page.waitForURL(url("/**"));

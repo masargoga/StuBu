@@ -3,7 +3,7 @@
 StuBu records working time. Employees check in and out (or correct their days afterwards), submit a monthly
 timesheet, and their manager approves or rejects it. Administrators manage employees and public holidays and can
 look at everything, including the audit log. The application is meant for companies in Germany and is available in
-English and German.
+English, German, Spanish and French; everybody chooses their language in the language selector.
 
 It is built specification-first: the requirements in [`spec/`](spec/) are the single source of truth, and each use
 case was implemented and verified (automated tests plus a real-browser check at desktop, tablet and phone size) one

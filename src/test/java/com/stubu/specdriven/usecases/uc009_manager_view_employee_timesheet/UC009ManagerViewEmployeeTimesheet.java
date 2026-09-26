@@ -411,7 +411,8 @@ class UC009ManagerViewEmployeeTimesheet extends SpringBrowserlessTest {
 
     @SuppressWarnings("unchecked")
     private Select<YearMonth> monthSelect() {
-        return find(Select.class).single();
+        return find(Select.class).all().stream().filter(select -> !(select instanceof com.stubu.specdriven.base.LanguageSelector))
+                .reduce((first, second) -> { throw new AssertionError("More than one month selector"); }).orElseThrow();
     }
 
     private List<Div> employeeRows() {

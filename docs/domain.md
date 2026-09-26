@@ -10,7 +10,8 @@ the pieces fit together. All timestamps are absolute UTC instants taken from the
 Department 1 ── n Employee ──(manager)── Employee
                     │
                     ├── n TimeEntry     one work period: check-in .. check-out
-                    └── n Timesheet     one per employee and month, with a status
+                    ├── n Timesheet     one per employee and month, with a status
+                    └── 0..1 EmployeeSetting   personal settings (language)
 
 PublicHoliday                            a date and a name, informational only
 AuditLogEntry                            append-only history of changes and logins
@@ -21,6 +22,7 @@ AuditLogEntry                            append-only history of changes and logi
 | `Employee` | Who can sign in and with which role (`EMPLOYEE`, `MANAGER`, `ADMIN`) | Unique lower-case email; never deleted, only deactivated; `version` for optimistic locking |
 | `Department` | Groups employees; a manager also covers their own department | |
 | `TimeEntry` | A work period. Open while `checkOutAt` is empty | Unique `open_employee_id` allows only one open period per employee, even across pods; a check-out never precedes the check-in; `version` |
+| `EmployeeSetting` | Personal settings of an employee: one row per employee (created when the first setting is saved), one typed column per setting; the language (`en`, `de`, `es`, `fr`, or empty = not chosen) is the first, a theme can follow | Primary key is the employee id; the database only accepts the four codes; changes are not audited (UC-016); `version` |
 | `Timesheet` | The month of an employee with its approval state | Unique per employee and month; created the first time the month is opened; a month without a record counts as a draft; `version` |
 | `PublicHoliday` | Marks a date in the month view | Never changes worked time; unique date; `version` |
 | `AuditLogEntry` | Who did what, when, with old and new values (JSON) and a reason | Written in the same transaction as the change; the repository has no update or delete |
@@ -73,6 +75,7 @@ Flyway migrations in `src/main/resources/db/migration` (portable SQL, identical 
 | `V4__timesheet_approval_and_public_holiday.sql` | approval columns, `public_holiday` |
 | `V5__optimistic_locking.sql` | `version` on `employee` and `public_holiday` |
 | `V6__audit_log_user_indexes.sql` | indexes for the audit log's user filter and the last login |
+| `V8__employee_setting.sql` | `employee_setting` with the language of an employee |
 | `db/vendor/postgresql/V7__audit_log_append_only.sql` | PostgreSQL only: triggers that refuse `UPDATE`, `DELETE` and `TRUNCATE` on `audit_log` |
 
 Query notes for large installations (about 10,000 employees): the employee list is searched, sorted and paged in the

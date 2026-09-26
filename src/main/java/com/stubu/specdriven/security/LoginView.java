@@ -1,5 +1,7 @@
 package com.stubu.specdriven.security;
 
+import com.stubu.specdriven.base.LanguageSelector;
+import com.stubu.specdriven.settings.EmployeeSettingsService;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
@@ -39,7 +41,7 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver, Ha
     private final VerticalLayout providerButtons = new VerticalLayout();
     private LoginError error;
 
-    public LoginView(ClientRegistrationRepository registrations) {
+    public LoginView(ClientRegistrationRepository registrations, EmployeeSettingsService settings) {
         if (registrations instanceof Iterable<?> configured) {
             configured.forEach(registration -> providers.add((ClientRegistration) registration));
         }
@@ -55,8 +57,10 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver, Ha
         providerButtons.setPadding(false);
         providerButtons.setSpacing(true);
 
-        VerticalLayout card = new VerticalLayout(com.stubu.specdriven.base.AppLogo.create(), title, intro, message,
-                providerButtons);
+        // The logo and the language selector share the top row of the card; nobody is known yet, so the choice stays in the browser.
+        Div top = new Div(com.stubu.specdriven.base.AppLogo.create(), new LanguageSelector(settings, null));
+        top.addClassName("login-top");
+        VerticalLayout card = new VerticalLayout(top, title, intro, message, providerButtons);
         card.addClassNames("login-card", "aura-surface-solid");
         card.setPadding(true);
         card.setSpacing(true);

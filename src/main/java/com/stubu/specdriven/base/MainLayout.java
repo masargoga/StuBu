@@ -9,6 +9,7 @@ import com.stubu.specdriven.employee.Role;
 import com.stubu.specdriven.home.HomeView;
 import com.stubu.specdriven.monthlytimesheet.MonthlyTimesheetView;
 import com.stubu.specdriven.security.EmployeePrincipal;
+import com.stubu.specdriven.settings.EmployeeSettingsService;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.avatar.Avatar;
@@ -50,12 +51,16 @@ public class MainLayout extends AppLayout implements LocaleChangeObserver {
     private final SideNavItem audit = new SideNavItem("", AuditLogView.class, VaadinIcon.RECORDS.create());
     private final DrawerToggle drawerToggle = new DrawerToggle();
 
-    public MainLayout(AuthenticationContext authenticationContext) {
+    public MainLayout(AuthenticationContext authenticationContext, EmployeeSettingsService settings) {
         title.addClassName("app-title");
 
         HorizontalLayout user = new HorizontalLayout();
         user.addClassName("app-user");
         user.setAlignItems(FlexComponent.Alignment.CENTER);
+        Long employeeId = authenticationContext.getAuthenticatedUser(Object.class)
+                .filter(EmployeePrincipal.class::isInstance).map(EmployeePrincipal.class::cast)
+                .map(EmployeePrincipal::getEmployeeId).orElse(null);
+        user.add(new LanguageSelector(settings, employeeId));
         Role role = authenticationContext.getAuthenticatedUser(Object.class)
                 .filter(EmployeePrincipal.class::isInstance).map(EmployeePrincipal.class::cast)
                 .map(EmployeePrincipal::getRole).orElse(Role.EMPLOYEE);

@@ -116,7 +116,7 @@ requires a rebuild. Secrets belong in the environment or a secret store, never i
 | `stubu.time-tracking.refresh-interval` | `STUBU_TIMETRACKING_REFRESHINTERVAL` | `PT30S` | How often an open time tracking page refreshes itself |
 | `stubu.retention.time-records` | `STUBU_RETENTION_TIME_RECORDS` | `P1Y` | How long time records are kept (reported only, nothing is deleted) |
 | `stubu.notifications.from` | `STUBU_NOTIFICATIONS_FROM` | `noreply@stubu.local` | Sender of the emails |
-| `stubu.notifications.locale` | `STUBU_NOTIFICATIONS_LOCALE` | `en` | Language of the emails (`en`, `de`) |
+| `stubu.notifications.locale` | `STUBU_NOTIFICATIONS_LOCALE` | `en` | Language of the emails when the recipient has not chosen one (`en`, `de`, `es`, `fr`) |
 | `stubu.notifications.zone` | `STUBU_NOTIFICATIONS_ZONE` | `UTC` | Time zone of the times in the emails |
 | `spring.mail.*` | `SPRING_MAIL_*` | unset | Mail server; without a host emails are only logged |
 | `server.shutdown` | – | `graceful` | Finish running requests on shutdown |
