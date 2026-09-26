@@ -288,19 +288,28 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
         name.setMaxLength(255);
         name.setRequiredIndicatorVisible(true);
         name.setWidthFull();
-        long regionId = editing ? existing.getRegionId() : chosenRegionId;
+        // A new holiday goes to the region the administrator chooses (the chosen region of the page to begin with);
+        // an existing holiday stays in its region, which is only shown.
+        Select<RegionRow> regionChoice = new Select<>();
+        regionChoice.setLabel(getTranslation("holidays.region"));
+        regionChoice.setTestId("holiday-region-choice");
+        regionChoice.setItems(regions);
+        regionChoice.setItemLabelGenerator(RegionRow::name);
+        regionChoice.setRequiredIndicatorVisible(true);
+        regionChoice.setWidthFull();
+        chosenRegion().ifPresent(regionChoice::setValue);
         TextField regionShown = new TextField(getTranslation("holidays.region"));
         regionShown.setTestId("holiday-region-shown");
         regionShown.setReadOnly(true);
         regionShown.setWidthFull();
-        regions.stream().filter(candidate -> candidate.id() == regionId).findFirst()
-                .ifPresent(shown -> regionShown.setValue(shown.name()));
         if (editing) {
+            regions.stream().filter(candidate -> candidate.id() == existing.getRegionId()).findFirst()
+                    .ifPresent(shown -> regionShown.setValue(shown.name()));
             date.setValue(existing.getDate());
             name.setValue(existing.getName());
         }
         DialogError error = new DialogError();
-        Div body = new Div(regionShown, date, name, error);
+        Div body = new Div(editing ? regionShown : regionChoice, date, name, error);
         body.addClassNames("time-dialog-content", "review-dialog-content");
         dialog.add(body);
 
@@ -315,11 +324,20 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
         save.addClickListener(event -> {
             date.setInvalid(false);
             name.setInvalid(false);
+            regionChoice.setInvalid(false);
             error.setVisible(false);
+            if (!editing && regionChoice.getValue() == null) {
+                regionChoice.setErrorMessage(getTranslation("manage.error.REGION_REQUIRED"));
+                regionChoice.setInvalid(true);
+                return;
+            }
             try {
                 PublicHoliday saved = editing ? service.update(adminId, existing.getId(), date.getValue(),
                         name.getValue(), existing.getVersion())
-                        : service.add(adminId, regionId, date.getValue(), name.getValue());
+                        : service.add(adminId, regionChoice.getValue().id(), date.getValue(), name.getValue());
+                if (!editing) {
+                    chosenRegionId = saved.getRegionId(); // show the region the holiday was added to
+                }
                 message = editing ? new Message("holidays.updated", false)
                         : new Message("holidays.added", false, saved.getName(), formatted(saved.getDate()));
             } catch (HolidayValidationException invalid) {

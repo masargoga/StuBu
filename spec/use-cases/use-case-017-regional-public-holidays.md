@@ -39,10 +39,10 @@ The administrator opens "Public holidays" (or the employee form) and adds, renam
 2. System shows a region selector (the first region, ordered by name, is chosen), the year filter and the holidays of the chosen region and year.
 3. Administrator opens "Manage regions" and enters the name of a new region, for example "Germany – Bavaria", and saves.
 4. System stores the region with an audit entry and shows it in the region selector.
-5. Administrator chooses the region in the selector and clicks "Add holiday".
-6. System shows the form with the date and the name; the region is shown and cannot be changed.
-7. Administrator enters date and name and saves.
-8. System stores the holiday for that region with an audit entry, shows a success message and lists the holiday under that region.
+5. Administrator clicks "Add holiday".
+6. System shows the form with the region (the region chosen in the selector to begin with), the date and the name.
+7. Administrator can choose another region, enters date and name and saves.
+8. System stores the holiday for the chosen region with an audit entry, shows a success message and shows the holidays of that region, with the new holiday in the list.
 9. Administrator opens "Manage employees" and adds or edits an employee, chooses the employee's region in the required field "Region" (new employees start with the first region) and saves.
 10. System stores the employee with the region and writes the usual audit entry with the old and the new region.
 11. An employee opens "My Timesheet". System marks only the days that are public holidays in the employee's region and shows the note "Public holidays: <region>" with the month.
@@ -144,7 +144,7 @@ The administrator opens "Public holidays" (or the employee form) and adds, renam
 | BR-06 | A timesheet view always shows the holidays of the region of the employee whose timesheet it is, never of the person looking at it. This holds for the employee, the manager, the reviewer and the administrator |
 | BR-07 | Adding, renaming and deleting a region, and every holiday change, are audited with the old and new values, in the same transaction as the change; a rename is protected against concurrent changes (version) |
 | BR-08 | Public holidays stay informational: they never change worked time or totals (UC-012 BR-06); their names are not translated |
-| BR-09 | Editing a holiday cannot move it to another region; the region is shown but read-only (delete and add again to move it) |
+| BR-09 | The region of a new holiday is chosen in the form (the region of the page is preselected); editing a holiday cannot move it to another region: the region is shown but read-only (delete and add again to move it) |
 
 ---
 
@@ -170,7 +170,7 @@ The administrator opens "Public holidays" (or the employee form) and adds, renam
 
 - **Public holidays page:** A region selector above the list (with the year filter as before), a "Manage regions" button, and the holidays of the chosen region and year. "Add holiday" and the row actions Edit and Delete work on the chosen region.
 - **Manage regions dialog:** The list of regions with their number of employees and holidays, a field to add a region, and Rename and Delete for each region; a region that is in use shows why it cannot be deleted.
-- **Add/Edit holiday form:** Date and name as before, plus the region shown as read-only text.
+- **Add holiday form:** A required "Region" selection (the chosen region of the page is preselected), the date and the name. **Edit holiday form:** the same, but the region is shown as read-only text.
 - **Employee form:** A required "Region" selection, and the region is also shown on the employee's detail page.
 - **Timesheet views:** A note "Public holidays: <region>" next to the month, on the employee's own timesheet and on the timesheet of an employee seen by a manager or administrator.
 

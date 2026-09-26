@@ -251,8 +251,8 @@ class UC017RegionalPublicHolidays extends SpringBrowserlessTest {
 
         test(button("add-holiday")).click();
         Dialog dialog = find(Dialog.class).single();
-        assertEquals(USA, textField(dialog, "holiday-region-shown").getValue(), "The region is shown");
-        assertTrue(textField(dialog, "holiday-region-shown").isReadOnly(), "and cannot be changed");
+        assertEquals(USA, ((RegionRow) select(dialog, "holiday-region-choice").getValue()).name(),
+                "The chosen region of the page is preselected");
         find(DatePicker.class).from(dialog).single().setValue(LocalDate.of(2026, 11, 26));
         test(textField(dialog, "holiday-name")).setValue("Thanksgiving");
         test(button(dialog, "holiday-save")).click();
@@ -263,6 +263,28 @@ class UC017RegionalPublicHolidays extends SpringBrowserlessTest {
         assertTrue(holidays.findByRegionIdAndDate(Region.DEFAULT_ID, LocalDate.of(2026, 11, 26)).isEmpty());
         assertEquals(USA, regionSelect().getValue().name(), "The page stays with the region");
         assertTrue(text(view).contains("Thanksgiving"), text(view));
+    }
+
+    @Test
+    void mainFlow_theAdministratorCanChooseAnotherRegionInTheFormAndThePageShowsIt() {
+        PublicHolidayView view = openHolidays();
+        assertEquals("Default", regionSelect().getValue().name());
+
+        test(button("add-holiday")).click();
+        Dialog dialog = find(Dialog.class).single();
+        Select<Object> choice = select(dialog, "holiday-region-choice");
+        assertEquals(List.of("Default", BAVARIA, USA), choice.getListDataView().getItems()
+                .map(item -> ((RegionRow) item).name()).toList(), "Every region can be chosen");
+        test(choice).selectItem(BAVARIA);
+        find(DatePicker.class).from(dialog).single().setValue(LocalDate.of(2026, 10, 3));
+        test(textField(dialog, "holiday-name")).setValue("Unity Day");
+        test(button(dialog, "holiday-save")).click();
+
+        assertFalse(dialog.isOpened());
+        assertEquals("Unity Day", holidays.findByRegionIdAndDate(bavaria, LocalDate.of(2026, 10, 3)).orElseThrow().getName());
+        assertTrue(holidays.findByRegionIdAndDate(Region.DEFAULT_ID, LocalDate.of(2026, 10, 3)).isEmpty());
+        assertEquals(BAVARIA, regionSelect().getValue().name(), "The page shows the region the holiday was added to");
+        assertTrue(text(view).contains("Unity Day"), text(view));
     }
 
     @Test

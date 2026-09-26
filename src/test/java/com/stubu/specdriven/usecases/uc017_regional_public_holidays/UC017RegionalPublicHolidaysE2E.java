@@ -105,7 +105,8 @@ class UC017RegionalPublicHolidaysE2E extends E2ETest {
 
         page.getByTestId("add-holiday").click();
         page.getByTestId("holiday-save").waitFor();
-        assertThat(page.locator("[data-testid=holiday-region-shown] input")).hasValue("USA");
+        assertThat(page.getByTestId("holiday-region-choice")).containsText("USA");
+        assertInsideViewport("[data-testid=holiday-region-choice]", viewport);
         assertInsideViewport("[data-testid=holiday-save]", viewport);
         screenshot("holiday-form-" + viewport.name());
     }
