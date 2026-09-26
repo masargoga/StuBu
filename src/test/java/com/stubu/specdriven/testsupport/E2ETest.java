@@ -99,6 +99,7 @@ public abstract class E2ETest {
     void resetApplicationState() {
         clock.set(TestClockConfiguration.START);
         jdbc.update("delete from time_entry");
+        jdbc.update("delete from employee_setting"); // a language chosen by another test class
         // Timesheets are created on demand; one left submitted or approved by another test class would lock the entries.
         jdbc.update("delete from timesheet");
         employee(ALICE, "Alice", "Employee", Role.EMPLOYEE, true);

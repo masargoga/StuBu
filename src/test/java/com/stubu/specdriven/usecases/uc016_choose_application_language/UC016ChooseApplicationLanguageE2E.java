@@ -37,6 +37,11 @@ class UC016ChooseApplicationLanguageE2E extends E2ETest {
         jdbc.update("delete from employee_setting");
     }
 
+    @org.junit.jupiter.api.AfterEach
+    void leaveNoLanguageBehind() {
+        jdbc.update("delete from employee_setting"); // other test classes expect English
+    }
+
     private void choose(String nativeName) {
         page.getByTestId("language-select").click();
         page.locator("vaadin-select-list-box vaadin-select-item").filter(new Locator.FilterOptions().setHasText(nativeName)).first().click();

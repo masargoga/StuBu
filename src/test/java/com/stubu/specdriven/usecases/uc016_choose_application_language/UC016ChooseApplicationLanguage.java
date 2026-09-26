@@ -104,6 +104,8 @@ class UC016ChooseApplicationLanguage extends SpringBrowserlessTest {
     void reset() {
         Mockito.reset(settings, mailSender);
         SecurityContextHolder.clearContext();
+        // The chosen languages must not leak into other test classes (emails and pages would come in Spanish).
+        jdbc.update("delete from employee_setting");
     }
 
     // --- Main Flow ------------------------------------------------------------------------------
