@@ -68,10 +68,14 @@ created from a login), for example:
 
 ```sql
 INSERT INTO department (name, created_at) VALUES ('Management', now());
-INSERT INTO employee (email, first_name, last_name, role, department_id, is_active, created_at, updated_at)
+INSERT INTO employee (email, first_name, last_name, role, department_id, region_id, is_active, created_at, updated_at)
 VALUES ('first.admin@example.com', 'First', 'Admin', 'ADMIN',
-        (SELECT id FROM department WHERE name = 'Management'), TRUE, now(), now());
+        (SELECT id FROM department WHERE name = 'Management'), (SELECT id FROM region WHERE name = 'Default'), TRUE,
+        now(), now());
 ```
+
+Every employee needs a region (UC-017); the migration creates the region "Default" for this. The administrator can
+rename it or add more regions on the "Public holidays" page.
 
 The administrator then adds everybody else on the "Employees" page. Give the database user of the application only
 the rights it needs (`SELECT`, `INSERT`, `UPDATE`, `DELETE` on the tables; the schema is changed by Flyway, so run
