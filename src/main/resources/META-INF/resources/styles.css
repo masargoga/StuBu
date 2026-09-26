@@ -1716,9 +1716,10 @@ vaadin-dialog::part(overlay) {
   max-width: 22rem;
 }
 
-.holiday-view .holiday-toolbar vaadin-button {
-  min-height: 2.5rem;
-  font-size: var(--aura-font-size-l);
+.holiday-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vaadin-gap-m);
 }
 
 .holiday-region-note {

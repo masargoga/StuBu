@@ -77,7 +77,8 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
     private final H2 heading = new H2();
     private final Button add = new Button(VaadinIcon.PLUS.create());
     private final Select<RegionRow> region = new Select<>();
-    private final Button manageRegions = new Button();
+    private final Button manageRegions = new Button(VaadinIcon.GLOBE_WIRE.create());
+    private final Div actions = new Div();
     private final Select<Integer> year = new Select<>();
     private final Div toolbar = new Div();
     private final MessageBox messageBox = new MessageBox();
@@ -112,7 +113,8 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
             }
         });
         manageRegions.setTestId("manage-regions");
-        manageRegions.addThemeVariants(ButtonVariant.TERTIARY);
+        manageRegions.addThemeVariants(ButtonVariant.PRIMARY);
+        manageRegions.addClassName("manage-add");
         manageRegions.addClickListener(event -> new RegionManagementDialog(regionService, adminId, this::refresh).open(this));
         year.setTestId("holiday-year");
         year.setEmptySelectionAllowed(true);
@@ -129,8 +131,10 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
         list.getElement().setAttribute("role", "table");
 
         toolbar.addClassName("holiday-toolbar");
-        toolbar.add(region, year, manageRegions);
-        add(heading, add, messageBox, loadErrorBox, toolbar, emptyHint, list);
+        toolbar.add(region, year);
+        actions.addClassName("holiday-actions");
+        actions.add(add, manageRegions);
+        add(heading, actions, messageBox, loadErrorBox, toolbar, emptyHint, list);
         load();
     }
 
@@ -174,6 +178,7 @@ public class PublicHolidayView extends VerticalLayout implements HasDynamicTitle
 
         loadErrorBox.update(loadFailed, getTranslation("holidays.loadFailed"), getTranslation("time.retry"));
         manageRegions.setText(getTranslation("regions.manage"));
+        manageRegions.setEnabled(!loadFailed);
         renderRegions();
         add.setEnabled(!loadFailed && chosenRegion().isPresent());
         renderYears();
